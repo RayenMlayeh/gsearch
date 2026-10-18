@@ -87,6 +87,11 @@ with `uvx --from gsearch-agent gsearch setup`.
 
 ## 🆚 How it compares
 
+<p align="center"><img src="docs/assets/compare.svg" alt="How gsearch compares with paid SERP APIs, other search indexes, free engine MCP servers and Playwright Chromium Google MCP servers" width="100%"></p>
+
+<details>
+<summary><b>The same comparison as text</b></summary>
+
 | | **gsearch** | SerpApi, Bright Data | Brave, Tavily, Exa | DuckDuckGo, SearXNG MCPs | Playwright + Chromium Google MCPs |
 |---|---|---|---|---|---|
 | Google's own results | ✅ | ✅ | ❌ their own index | ❌ / depends on the instance | ✅ |
@@ -98,9 +103,11 @@ with `uvx --from gsearch-agent gsearch setup`.
 | Blocks reported as errors with a retry time | ✅ | n/a | n/a | varies | varies |
 | Terms-of-Service risk is yours | **yes** ([Legal](#-legal-and-responsible-use)) | the provider's | no | low | yes |
 
+</details>
+
 <sub>"Varies": we did not test those projects. Our only Chromium measurement is
 [F-0001](docs/findings/F-0001-cold-start-chrome-vs-camoufox.md): Playwright Chrome was sent to a CAPTCHA 2 of 2
-times on an IP where gsearch was served.</sub>
+times on an IP where gsearch was served. Read [Legal](#-legal-and-responsible-use) before running live searches.</sub>
 
 <p align="center"><img src="docs/assets/results.svg" alt="Results: 24 of 24 searches served with 0 CAPTCHAs on a home IP, 1.2 s per search on a warm session, 0.6 MB per search on a clean proxy IP, every link resolved to its real URL" width="100%"></p>
 
