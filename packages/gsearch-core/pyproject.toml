@@ -8,7 +8,7 @@ dependencies = ["gsearch-parse==0.1.0"]
 
 [project.optional-dependencies]
 # Live search. Camoufox is MPL-2.0: installed from PyPI on request, never vendored.
-live = ["camoufox[geoip]>=0.5.6", "curl_cffi>=0.16,<0.17"]
+live = ["camoufox[geoip]==0.5.6", "curl_cffi>=0.16,<0.17"]  # the versions the tests run against
 
 [build-system]
 requires = ["hatchling>=1.25"]
