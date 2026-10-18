@@ -1,10 +1,10 @@
 name: release
 
-# Push a tag like v0.1.0 to publish that version to PyPI and the MCP Registry.
+# Publishing a GitHub release (tag like v0.1.0) publishes that version to PyPI and the MCP Registry.
 # One-time setup on pypi.org: add a trusted publisher for this repo, workflow `release.yml`, environment `pypi`.
 on:
-  push:
-    tags: ["v*"]
+  release:
+    types: [published]
 
 permissions:
   contents: read

@@ -27,8 +27,8 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Lint
         run: |
-          ruff check packages tests tools
-          ruff format --check packages tests tools
+          ruff check packages tests tools examples
+          ruff format --check packages tests tools examples
       - name: Type check
         run: mypy
       - name: Tests

@@ -20,8 +20,8 @@ All four must pass before a pull request is merged:
 
 ```bash
 pytest                                  # everything, including real Camoufox against a local fake Google
-ruff check packages tests tools
-ruff format --check packages tests tools
+ruff check packages tests tools examples
+ruff format --check packages tests tools examples
 mypy
 ```
 

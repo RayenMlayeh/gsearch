@@ -282,6 +282,9 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+To call it over MCP from your own code, the way an agent does, see
+[`examples/mcp_client.py`](examples/mcp_client.py).
+
 </details>
 
 <details>
