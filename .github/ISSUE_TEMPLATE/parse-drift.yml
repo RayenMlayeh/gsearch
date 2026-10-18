@@ -1,0 +1,29 @@
+name: Google changed its page (parse_drift)
+description: A search returned `parse_drift`, or a field is missing or wrong.
+labels: [parse-drift]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks: layout changes are found by people like you. Please **don't attach raw saved pages**: they contain
+        cookies and session tokens. If you can, minimize the page first (see
+        [CONTRIBUTING.md](https://github.com/RayenMlayeh/gsearch/blob/main/CONTRIBUTING.md#when-google-changes-its-page)).
+  - type: input
+    id: query
+    attributes:
+      label: Query, with lang / country / time_range if set
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: The error, or the wrong / missing field
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: gsearch version (`gsearch --version`)
+    validations:
+      required: true

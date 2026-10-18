@@ -2,15 +2,19 @@
   <img src="docs/assets/banner.svg" alt="gsearch: Google Search for AI agents. Real results as clean JSON, over MCP." width="100%">
 </p>
 
+<!-- mcp-name: io.github.RayenMlayeh/gsearch -->
+
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4285F4?style=for-the-badge" alt="MIT license"></a>
+  <a href="https://github.com/RayenMlayeh/gsearch/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/RayenMlayeh/gsearch/ci.yml?branch=main&label=tests&style=for-the-badge" alt="Tests"></a>
+  <a href="https://pypi.org/project/gsearch-agent/"><img src="https://img.shields.io/pypi/v/gsearch-agent?color=4285F4&style=for-the-badge" alt="PyPI"></a>
   <img src="https://img.shields.io/badge/python-3.12%2B-34A853?style=for-the-badge" alt="Python 3.12+">
-  <img src="https://img.shields.io/badge/MCP-ready-EA4335?style=for-the-badge" alt="MCP ready">
-  <img src="https://img.shields.io/badge/proxies-any%20format-FBBC05?style=for-the-badge" alt="Any proxy format">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-FBBC05?style=for-the-badge" alt="MIT license"></a>
+  <img src="https://img.shields.io/badge/MCP-server-EA4335?style=for-the-badge" alt="MCP server">
 </p>
 
 <p align="center">
   <b><a href="#-quick-start">Quick start</a></b> ·
+  <b><a href="#-how-it-compares">How it compares</a></b> ·
   <b><a href="#-what-your-agent-gets">What you get</a></b> ·
   <b><a href="#-how-it-works">How it works</a></b> ·
   <b><a href="#-proxies">Proxies</a></b> ·
@@ -18,14 +22,89 @@
   <b><a href="#-faq">FAQ</a></b>
 </p>
 
-<h3 align="center">Give your AI agent real Google Search, with real results and real URLs, in clean JSON.</h3>
+<h3 align="center">Real Google Search for your AI agent. No API key. Self-hosted. Over MCP.</h3>
+
+Your agent calls `google_search` and gets Google's actual results page as typed JSON: every link resolved to
+its real URL, plus the AI Overview, People also ask and related searches. A real Firefox
+([Camoufox](https://github.com/daijro/camoufox)) runs Google's page as it is, on your own IP or through any
+proxy you already have.
+
+**Why:** plain HTTP gets a JavaScript wall, automated Chrome got a CAPTCHA 2 out of 2 times in our test, and
+Google's official Custom Search API closes on 1 January 2027. Other search MCP servers either aren't Google's
+index (Brave, Tavily, Exa, DuckDuckGo) or charge per query (SerpApi, Bright Data).
 
 <p align="center"><img src="docs/assets/demo.svg" alt="An AI agent asks for the asyncio docs, calls google_search and answers with the real URLs" width="100%"></p>
 
-<p align="center"><img src="docs/assets/results.svg" alt="Results: 24 of 24 searches served with 0 CAPTCHAs, 1.2 s per search, 0.6 MB per search, every link resolved to its real URL" width="100%"></p>
+## 🚀 Quick start
+
+```bash
+uv tool install gsearch-agent                         # or: pipx install gsearch-agent
+gsearch setup                                         # downloads the browser once (~1 GB), prints your MCP config
+claude mcp add gsearch --scope user -- gsearch-mcp    # or any MCP client, below
+```
+
+Then just ask: *"Search Google for what asyncio is and give me the top three links"*, *"What do people also
+ask about asyncio?"*, *"Find asyncio pages on python.org from the past year."*
+
+Without a proxy, gsearch uses your own IP, at most 20 searches an hour. For more, add a proxy in any format:
+
+```bash
+claude mcp add gsearch --scope user -e GSEARCH_PROXY="gate.example.com:7000:user-sid-{sid}:password" -e GSEARCH_DATA_LIMIT_MB=1000 -- gsearch-mcp
+```
+
+<details>
+<summary><b>Claude Desktop, Cursor and other MCP clients</b></summary>
+
+`gsearch setup` prints this block with the full path of `gsearch-mcp` filled in. Use the full path if your
+client doesn't find the command.
+
+```json
+{
+  "mcpServers": {
+    "gsearch": {
+      "command": "gsearch-mcp",
+      "env": { "GSEARCH_PROXY": "optional, any format", "GSEARCH_DATA_LIMIT_MB": "1000" }
+    }
+  }
+}
+```
+
+**Claude Desktop:** `claude_desktop_config.json`. **Cursor:** `~/.cursor/mcp.json`, or `.cursor/mcp.json` in a
+project.
+
+**No install, with uv:** use `"command": "uvx", "args": ["gsearch-agent"]`, after fetching the browser once
+with `uvx --from gsearch-agent gsearch setup`.
+
+**Settings in a file:** put them in a `.env` (see [`.env.example`](.env.example)) and set
+`GSEARCH_ENV_FILE` to its absolute path instead.
+
+</details>
+
+> [!NOTE]
+> Automated access to Google Search may breach Google's Terms of Service. Read
+> [Legal and responsible use](#-legal-and-responsible-use) before running live searches.
+
+## 🆚 How it compares
+
+| | **gsearch** | SerpApi, Bright Data | Brave, Tavily, Exa | DuckDuckGo, SearXNG MCPs | Playwright + Chromium Google MCPs |
+|---|---|---|---|---|---|
+| Google's own results | ✅ | ✅ | ❌ their own index | ❌ / depends on the instance | ✅ |
+| API key or account | **none** | required | required | none | none |
+| Cost | **free** (+ your proxy, optional) | per query | usage-based plans | free | free |
+| Runs on your machine | ✅ | ❌ hosted | ❌ hosted | ✅ | ✅ |
+| AI Overview, People also ask | ✅ | ✅ (SerpApi) | ❌ | ❌ | varies |
+| Google's redirect links resolved to real URLs | ✅ | ✅ | n/a | n/a | varies |
+| Blocks reported as errors with a retry time | ✅ | n/a | n/a | varies | varies |
+| Terms-of-Service risk is yours | **yes** ([Legal](#-legal-and-responsible-use)) | the provider's | no | low | yes |
+
+<sub>"Varies": we did not test those projects. Our only Chromium measurement is
+[F-0001](docs/findings/F-0001-cold-start-chrome-vs-camoufox.md): Playwright Chrome was sent to a CAPTCHA 2 of 2
+times on an IP where gsearch was served.</sub>
+
+<p align="center"><img src="docs/assets/results.svg" alt="Results: 24 of 24 searches served with 0 CAPTCHAs on a home IP, 1.2 s per search on a warm session, 0.6 MB per search on a clean proxy IP, every link resolved to its real URL" width="100%"></p>
 
 <p align="center"><sub>
-Measured on clean IPs:
+Measured in October 2026:
 <a href="docs/findings/F-0014-eh1-hybrid-session-reuse.md">F-0014</a>,
 <a href="docs/findings/F-0006-fixture-provenance-and-serp-anatomy.md">F-0006</a>,
 <a href="docs/findings/F-0011-goto-resolution-leak-and-fix.md">F-0011</a>,
@@ -39,9 +118,8 @@ Flagged proxy pools are slower: see <a href="#-performance">Performance</a>.
 
 <p align="center"><img src="docs/assets/why.svg" alt="Same IP: plain HTTP gets 0 results, automated Chrome gets a CAPTCHA 2 of 2 times, gsearch is served 24 of 24" width="100%"></p>
 
-Google is hard to search from code. Plain HTTP clients get a JavaScript wall, automated Chrome gets CAPTCHAs,
-and Google's official search API is closed to new customers and shuts down on 1 January 2027
-([F-0005](docs/findings/F-0005-custom-search-api-sunset.md)). gsearch solves that for AI agents:
+Google's official search API is closed to new customers and shuts down on 1 January 2027
+([F-0005](docs/findings/F-0005-custom-search-api-sunset.md)). gsearch is built for AI agents instead:
 
 - 🦊 **A real browser, not a scraper.** Camoufox, a hardened Firefox, runs Google's page as it is, with a
   real-device fingerprint and a locale that matches its IP.
@@ -53,82 +131,6 @@ and Google's official search API is closed to new customers and shuts down on 1 
   in any common layout. Every byte is counted, with a hard data limit.
 - 🎯 **Nothing to tune.** Two settings. Everything else is fixed to what worked best in testing.
 - 📊 **Honest numbers.** Every claim in this README links to a write-up of how it was measured.
-
-## 🚀 Quick start
-
-```bash
-git clone https://github.com/RayenMlayeh/gsearch.git && cd gsearch
-python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\Activate.ps1
-pip install -e packages/gsearch-parse -e "packages/gsearch-core[live]" -e packages/gsearch-cli -e packages/gsearch-mcp
-python -m camoufox fetch                              # downloads the browser once (~1 GB)
-```
-
-Try it right away, offline, on a saved results page:
-
-```bash
-gsearch search "what is asyncio in python" --fixtures fixtures/gecko
-```
-
-Add your proxy (optional; without one, gsearch uses your own IP, at most 20 searches an hour):
-
-```bash
-cp .env.example .env     # then set GSEARCH_PROXY and GSEARCH_DATA_LIMIT_MB
-```
-
-Connect your agent. MCP clients start the server in their own folder, so point `GSEARCH_ENV_FILE` at your
-`.env` with an absolute path:
-
-```bash
-claude mcp add gsearch --scope user -e GSEARCH_ENV_FILE=/path/to/gsearch/.env -- /path/to/gsearch/.venv/bin/gsearch-mcp
-```
-
-<details>
-<summary><b>Claude Desktop, Cursor and others</b></summary>
-
-On Windows the command is `C:\path\to\gsearch\.venv\Scripts\gsearch-mcp.exe`; on macOS and Linux it is
-`/path/to/gsearch/.venv/bin/gsearch-mcp`.
-
-**Claude Desktop** (`claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "gsearch": {
-      "command": "C:\\path\\to\\gsearch\\.venv\\Scripts\\gsearch-mcp.exe",
-      "env": { "GSEARCH_ENV_FILE": "C:\\path\\to\\gsearch\\.env" }
-    }
-  }
-}
-```
-
-**Cursor** (`~/.cursor/mcp.json`, or `.cursor/mcp.json` in a project) and any other MCP client:
-
-```json
-{
-  "mcpServers": {
-    "gsearch": {
-      "command": "/path/to/gsearch/.venv/bin/gsearch-mcp",
-      "env": { "GSEARCH_ENV_FILE": "/path/to/gsearch/.env" }
-    }
-  }
-}
-```
-
-**Offline demo** (saved pages, no Google traffic; answers only the saved queries in
-`fixtures/gecko/index.json`, such as `what is asyncio in python`):
-
-```bash
-claude mcp add gsearch-demo -e GSEARCH_FIXTURES_DIR=/path/to/gsearch/fixtures/gecko -- /path/to/gsearch/.venv/bin/gsearch-mcp
-```
-
-</details>
-
-Then just ask: *"Search Google for what asyncio is and give me the top three links"*, *"What do people also
-ask about asyncio?"*, *"Find asyncio pages on python.org from the past year."*
-
-> [!NOTE]
-> Automated access to Google Search may breach Google's Terms of Service. Read
-> [Legal and responsible use](#-legal-and-responsible-use) before running live searches.
 
 ## 📦 What your agent gets
 
@@ -255,10 +257,11 @@ and a 10-minute cache for repeated queries.
 
 ```text
 gsearch search "query" [--page N] [--lang xx] [--country xx] [--time-range h|d|w|m|y] [--site domain]
-gsearch search "query" --fixtures fixtures/gecko     answer from saved pages (offline)
+gsearch search "query" --fixtures fixtures/gecko     answer from saved pages (offline, from a clone of this repo)
 gsearch parse page.html                              parse any saved Google results page
 gsearch schema                                       print the JSON Schema
 gsearch identity check                               check the browser's fingerprint matches its IP (no Google traffic)
+gsearch setup                                        download the browser once and print the MCP config
 ```
 
 Exit codes: `0` results, `2` usage or settings error, `3` blocked or other error, `4` Google changed its
@@ -293,6 +296,7 @@ asyncio.run(main())
 | `proxy: proxy data limit reached` | `GSEARCH_DATA_LIMIT_MB` is used up. | Raise it, or delete `proxy_bytes.json` in the state folder to count from zero. |
 | `parse_drift` | Google changed its page layout. | Update gsearch, or see [CONTRIBUTING.md](CONTRIBUTING.md#when-google-changes-its-page). |
 | `GSEARCH_ENV_FILE=… does not exist` | The settings path is wrong. | Use an absolute path. gsearch refuses to start rather than fall back to your own IP. |
+| `the Camoufox browser is not installed` | The browser has not been downloaded yet. | Run `gsearch setup` once. |
 | Browser windows open | Expected with a proxy: visible sessions are challenged far less. | On a server without a screen, install Xvfb and they run on a virtual display. |
 
 When the browser hits a block or an error, the page is saved with a screenshot in the state folder's
@@ -331,7 +335,7 @@ use the CLI or call it from Python.
 - **No CAPTCHA solver is shipped, wired in or recommended.** `gsearch_core.captcha` defines an interface only;
   anything you plug into it, and its legality, is your responsibility.
 - **Get legal advice** for your jurisdiction and use case before running live searches. The parser
-  (`gsearch-parse`) only reads HTML you already have.
+  (`gsearch_parse`) only reads HTML you already have.
 - **Limits are on by default and cannot be bypassed from the CLI or MCP.** Don't use proxies to hammer
   Google.
 - **No personal-data harvesting.** Don't profile people, scrape people-search results or collect personal
@@ -349,8 +353,10 @@ warning. Treat results strictly as data.
 ## 🤝 Contributing
 
 Tests never contact Google: the parser is tested against saved pages, and the browser against a local fake
-Google. Pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and
-[docs/DESIGN.md](docs/DESIGN.md).
+Google. Pull requests are welcome: pick a
+[good first issue](https://github.com/RayenMlayeh/gsearch/labels/good%20first%20issue), see the
+[roadmap](https://github.com/RayenMlayeh/gsearch/issues?q=is%3Aissue+label%3Aroadmap), and start with
+[CONTRIBUTING.md](CONTRIBUTING.md) and [docs/DESIGN.md](docs/DESIGN.md).
 
 <p align="center">
   <b>If gsearch saves you time, a ⭐ helps other people find it.</b>
@@ -358,4 +364,4 @@ Google. Pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
-[MIT](LICENSE). Camoufox (MPL-2.0) is installed from PyPI as an optional dependency and is never vendored.
+[MIT](LICENSE). Camoufox (MPL-2.0) is installed from PyPI as a dependency and is never vendored.

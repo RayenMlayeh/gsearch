@@ -7,12 +7,11 @@ to run anywhere.
 ## Development setup
 
 ```bash
-git clone <this repo> gsearch && cd gsearch
+git clone https://github.com/RayenMlayeh/gsearch.git && cd gsearch
 python -m venv .venv
 source .venv/bin/activate              # Windows: .venv\Scripts\activate
-pip install -e packages/gsearch-parse -e "packages/gsearch-core[live]" -e packages/gsearch-cli -e packages/gsearch-mcp
-pip install pytest anyio mypy ruff
-python -m camoufox fetch               # downloads the Camoufox browser (~1 GB on disk, once)
+pip install -e ".[dev]"                # one package, gsearch-agent: four import packages under packages/
+gsearch setup                          # downloads the Camoufox browser (~1 GB on disk, once)
 ```
 
 ## Checks

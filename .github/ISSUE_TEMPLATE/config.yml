@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question or setup help
+    url: https://github.com/RayenMlayeh/gsearch/discussions/categories/q-a
+    about: Ask in Discussions.
+  - name: Share a proxy benchmark or your setup
+    url: https://github.com/RayenMlayeh/gsearch/discussions/categories/show-and-tell
+    about: Post your `tools/benchmark.py` results (no credentials, provider name optional).

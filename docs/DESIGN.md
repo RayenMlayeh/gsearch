@@ -5,14 +5,15 @@ Google, browsers or libraries is backed by a file in [findings/](findings/README
 
 ## Architecture
 
-Four packages, each depending only on the ones to its left:
+One distribution (`gsearch-agent` on PyPI) holding four import packages, each depending only on the ones
+above it:
 
 | Package | Network | What it does |
 |---|---|---|
-| `gsearch-parse` | none | HTML in, typed data out: page classification, versioned selector sets, invariants, JSON schema. Never imports `gsearch-core` (enforced by ruff). |
-| `gsearch-core` | yes | `SearchClient`, fetch backends, query cache, proxy pool and relay, pacing, durable state. |
-| `gsearch-cli` | via core | `gsearch search / parse / schema / identity check`. Argument parsing and JSON output only. |
-| `gsearch-mcp` | via core | MCP server over stdio: `google_search`, `google_search_status`. No scraping logic. |
+| `gsearch_parse` | none | HTML in, typed data out: page classification, versioned selector sets, invariants, JSON schema. Never imports `gsearch_core` (enforced by ruff). |
+| `gsearch_core` | yes | `SearchClient`, fetch backends, query cache, proxy pool and relay, pacing, durable state. |
+| `gsearch_cli` | via core | `gsearch search / parse / schema / identity check / setup`. Argument parsing and JSON output only. |
+| `gsearch_mcp` | via core | MCP server over stdio: `google_search`, `google_search_status`. No scraping logic. |
 
 Fetch backends all return a raw page; the client classifies and parses it, so every backend gets the same
 block detection and the same output:
@@ -50,7 +51,7 @@ instead, used in turn, each with the own-IP budget, and rest until midnight afte
 Numbered so the findings can cite them.
 
 - **D-001 Camoufox is the browser.** On the same IP, Playwright-Chrome was sent to a CAPTCHA and Camoufox was
-  served (F-0001). It is an optional dependency (MPL-2.0), installed by pip, never vendored.
+  served (F-0001). It is a dependency (MPL-2.0), installed by pip, never vendored.
 - **D-002 No official-API backend.** Google's Custom Search JSON API is closed to new customers and ends on
   2027-01-01 (F-0005). The `Fetcher` interface stays open for one.
 - **D-003 Proxies go through a local relay.** The browser and the HTTP client both use `127.0.0.1` without

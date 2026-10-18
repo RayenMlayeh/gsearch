@@ -1,0 +1,35 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.RayenMlayeh/gsearch",
+  "title": "gsearch",
+  "description": "Real Google Search for AI agents: real URLs, AI Overview and People also ask as typed JSON.",
+  "repository": {
+    "url": "https://github.com/RayenMlayeh/gsearch",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "gsearch-agent",
+      "version": "0.1.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "GSEARCH_PROXY",
+          "description": "Optional proxies in any format (host:port:user:pass, user:pass@host:port, socks5://...), or a file listing them. Unset: your own IP, at most 20 searches an hour.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "GSEARCH_DATA_LIMIT_MB",
+          "description": "Optional hard limit on proxy data, in MB, counted across restarts.",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

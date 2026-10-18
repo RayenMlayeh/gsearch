@@ -131,11 +131,24 @@ def build_server(client: SearchClient, *, live: bool) -> MCPServer:
     return server
 
 
+def _require_browser() -> None:
+    """Fail at start, not mid-session: Camoufox would otherwise download ~1 GB on the first search."""
+    from camoufox.pkgman import camoufox_path
+
+    try:
+        camoufox_path(download_if_missing=False)
+    except Exception as exc:
+        msg = "gsearch-mcp: the Camoufox browser is not installed; run `gsearch setup` once"
+        raise SystemExit(msg) from exc
+
+
 def main() -> None:
     try:
         fetcher, live = fetcher_from_env()
     except ValueError as exc:
         raise SystemExit(f"gsearch-mcp: {exc}") from exc
+    if live:
+        _require_browser()
     build_server(SearchClient(fetcher), live=live).run("stdio")
 
 

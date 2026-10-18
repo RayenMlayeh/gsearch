@@ -1,0 +1,46 @@
+name: Bug report
+description: Something doesn't work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste proxy passwords, `.env` contents, cookies or your IP address. Replace them with `***`.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Command or tool call, and its output
+      description: The error JSON (`code`, `message`, `retry_after_s`) helps most.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: gsearch version
+      description: Output of `gsearch --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Windows, macOS, Linux (desktop), Linux (server, Xvfb), Other]
+    validations:
+      required: true
+  - type: dropdown
+    id: proxy
+    attributes:
+      label: Proxy
+      options: [None (own IP), Rotating residential, Static (VPS / datacenter / ISP), SOCKS5, Other]
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: MCP client, if any
+      placeholder: Claude Code, Claude Desktop, Cursor, CLI, Python…

@@ -1,17 +1,62 @@
 [project]
-name = "gsearch-workspace"
-version = "0.0.0"
+name = "gsearch-agent"
+version = "0.1.0"
+description = "Real Google Search for AI agents, over MCP: real URLs, AI Overview and People also ask as typed JSON."
+readme = "docs/PYPI.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
-description = "Workspace root (not published)."
+authors = [{ name = "Rayen Mlayeh" }]
+keywords = ["mcp", "mcp-server", "google-search", "serp", "ai-agents", "llm", "web-search", "camoufox"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Typing :: Typed",
+]
+# Camoufox (MPL-2.0) is installed from PyPI, never vendored. Pinned to the versions the tests run against.
+dependencies = [
+  "pydantic>=2.9,<3",
+  "selectolax>=1.0,<2",
+  "mcp>=2.3,<3",
+  "camoufox[geoip]==0.5.6",
+  "curl_cffi>=0.16,<0.17",
+]
 
-[tool.uv.workspace]
-members = ["packages/*"]
+[project.optional-dependencies]
+dev = ["pytest", "anyio", "mypy", "ruff"]
 
-[tool.uv.sources]
-gsearch-parse = { workspace = true }
-gsearch-core = { workspace = true }
-gsearch-cli = { workspace = true }
-gsearch-mcp = { workspace = true }
+[project.scripts]
+gsearch = "gsearch_cli.main:main"
+gsearch-mcp = "gsearch_mcp.server:main"
+gsearch-agent = "gsearch_mcp.server:main"  # so `uvx gsearch-agent` starts the MCP server
+
+[project.urls]
+Homepage = "https://github.com/RayenMlayeh/gsearch"
+Source = "https://github.com/RayenMlayeh/gsearch"
+Issues = "https://github.com/RayenMlayeh/gsearch/issues"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+# One distribution, four import packages. gsearch_parse stays network-free (enforced by ruff below).
+[tool.hatch.build.targets.wheel]
+packages = [
+  "packages/gsearch-parse/src/gsearch_parse",
+  "packages/gsearch-core/src/gsearch_core",
+  "packages/gsearch-cli/src/gsearch_cli",
+  "packages/gsearch-mcp/src/gsearch_mcp",
+]
+
+[tool.hatch.build.targets.sdist]
+include = ["packages/*/src", "docs/PYPI.md", "LICENSE", "server.json"]
 
 [tool.ruff]
 line-length = 110

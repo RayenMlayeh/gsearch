@@ -1,0 +1,50 @@
+name: release
+
+# Push a tag like v0.1.0 to publish that version to PyPI and the MCP Registry.
+# One-time setup on pypi.org: add a trusted publisher for this repo, workflow `release.yml`, environment `pypi`.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  pypi:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check the tag matches the package and server.json versions
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          grep -q "^version = \"$tag\"$" pyproject.toml
+          test "$(jq -r .version server.json)" = "$tag"
+          test "$(jq -r '.packages[0].version' server.json)" = "$tag"
+      - name: Build
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  mcp-registry:
+    needs: pypi
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+      - name: Publish to the MCP Registry
+        run: |
+          ./mcp-publisher login github-oidc
+          # PyPI can take a minute to serve a new release; the registry reads its README to verify ownership.
+          for attempt in 1 2 3 4 5; do ./mcp-publisher publish && exit 0; sleep 60; done
+          exit 1

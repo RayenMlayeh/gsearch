@@ -7,6 +7,7 @@
   gsearch identity check [--headed]                launch the live identity's device against a local page and
                                                    check it is coherent with its exit IP (no Google traffic)
   gsearch schema                                   print the output JSON schema
+  gsearch setup                                    download the browser once and print the MCP client config
 Exit codes: 0 ok, 2 usage, 3 blocked/error result, 4 parse drift.
 """
 
@@ -16,7 +17,11 @@ import argparse
 import asyncio
 import gzip
 import json
+import os
+import shutil
+import subprocess
 import sys
+from importlib.metadata import version
 from pathlib import Path
 
 from gsearch_core.client import SearchClient
@@ -97,8 +102,57 @@ def cmd_identity_check(args: argparse.Namespace) -> int:
     return 0 if all(c.ok for c in checks) else 3
 
 
+def _server_command() -> str:
+    found = shutil.which("gsearch-mcp")
+    if found:
+        return str(Path(found).resolve())
+    return str(Path(sys.executable).with_name("gsearch-mcp.exe" if os.name == "nt" else "gsearch-mcp"))
+
+
+def _say(msg: str) -> None:
+    sys.stderr.write(f"gsearch: {msg}\n")
+
+
+def cmd_setup(args: argparse.Namespace) -> int:
+    from camoufox.pkgman import camoufox_path
+
+    try:
+        camoufox_path(download_if_missing=False)
+        _say("the Camoufox browser is already installed.")
+    except Exception:
+        _say("downloading the Camoufox browser (~1 GB, once)...")
+        if subprocess.call([sys.executable, "-m", "camoufox", "fetch"]) != 0:
+            _say("download failed; run `python -m camoufox fetch` to see why.")
+            return 3
+
+    server = _server_command()
+    env_file = os.environ.get("GSEARCH_ENV_FILE") or (".env" if Path(".env").is_file() else None)
+    env = {"GSEARCH_ENV_FILE": str(Path(env_file).resolve())} if env_file else {}
+    entry: dict[str, object] = {"command": server, **({"env": env} if env else {})}
+    claude_env = "".join(f" -e {k}={v}" for k, v in env.items())
+    lines = [
+        "",
+        "Ready. Connect your agent:",
+        "",
+        "Claude Code:",
+        f'  claude mcp add gsearch --scope user{claude_env} -- "{server}"',
+        "",
+        "Claude Desktop, Cursor and other MCP clients (add to their mcpServers config):",
+        json.dumps({"mcpServers": {"gsearch": entry}}, indent=2),
+    ]
+    if not env:
+        lines += [
+            "",
+            "No proxy settings found, so searches use your own IP (at most 20 an hour). To use a proxy, run",
+            "`gsearch setup` again from the folder that holds your .env, or with GSEARCH_ENV_FILE set.",
+        ]
+    sys.stdout.write("\n".join(lines) + "\n")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="gsearch", description="Google search results as structured JSON.")
+    p.add_argument("--version", action="version", version=f"gsearch {version('gsearch-agent')}")
     sub = p.add_subparsers(dest="command", required=True)
 
     pp = sub.add_parser("parse", help="parse a saved results page (offline)")
@@ -126,6 +180,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     sc = sub.add_parser("schema", help="print the output JSON schema")
     sc.set_defaults(func=lambda _a: sys.stdout.write(render()) and 0)
+
+    st = sub.add_parser("setup", help="download the browser once and print the MCP client config")
+    st.set_defaults(func=cmd_setup)
     return p
 
 

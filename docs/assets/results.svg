@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="t d">
   <title id="t">Results</title>
-  <desc id="d">Measured: 24 of 24 searches served with 0 CAPTCHAs on a clean IP; 1.2 seconds per search on a warm session and 14 seconds with a brand-new IP and browser; 0.6 MB per search on a clean proxy IP; every result link resolved to its real URL.</desc>
+  <desc id="d">Measured: 24 of 24 searches served with 0 CAPTCHAs on a home IP; 1.2 seconds per search on a warm session on your own IP and 14 seconds with a fresh proxy IP and browser; 0.6 MB per search on a clean proxy IP; every result link resolved to its real URL.</desc>
   <defs>
     <style>
       .f { font-family: "Google Sans", "Product Sans", Roboto, "Segoe UI", Arial, sans-serif; }
@@ -8,7 +8,7 @@
   </defs>
   <rect x="0.5" y="0.5" width="1199" height="399" rx="20" fill="#ffffff" stroke="#dadce0"/>
   <text x="40" y="54" class="f" font-size="26" font-weight="500" fill="#202124">Results</text>
-  <text x="140" y="54" class="f" font-size="16" fill="#5f6368">measured on clean IPs, October 2026</text>
+  <text x="140" y="54" class="f" font-size="16" fill="#5f6368">measured October 2026 · speed on your own IP, data on a clean proxy IP</text>
 
   <!-- served -->
   <g transform="translate(40 84)">
@@ -17,7 +17,7 @@
     <text x="28" y="132" class="f" font-size="19" font-weight="500" fill="#202124">searches served</text>
     <rect x="28" y="152" width="138" height="32" rx="16" fill="#34A853"/>
     <text x="97" y="174" class="f" font-size="16" font-weight="700" text-anchor="middle" fill="#ffffff">0 CAPTCHAs</text>
-    <text x="28" y="210" class="f" font-size="13" fill="#5f6368">5 test runs, one clean IP</text>
+    <text x="28" y="210" class="f" font-size="13" fill="#5f6368">5 test runs on a home IP</text>
   </g>
 
   <!-- speed -->
@@ -25,9 +25,9 @@
     <rect width="262" height="230" rx="18" fill="#e8f0fe"/>
     <text x="28" y="94" class="f" font-size="64" font-weight="700" fill="#1967d2">1.2 s</text>
     <text x="28" y="132" class="f" font-size="19" font-weight="500" fill="#202124">per search</text>
-    <text x="28" y="160" class="f" font-size="15" fill="#3c4043">on a warm session, links</text>
+    <text x="28" y="160" class="f" font-size="15" fill="#3c4043">own IP, warm session, links</text>
     <text x="28" y="180" class="f" font-size="15" fill="#3c4043">resolved · 14 s with a</text>
-    <text x="28" y="200" class="f" font-size="15" fill="#3c4043">brand-new IP and browser</text>
+    <text x="28" y="200" class="f" font-size="15" fill="#3c4043">fresh proxy IP and browser</text>
   </g>
 
   <!-- data -->
