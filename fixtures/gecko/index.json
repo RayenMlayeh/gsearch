@@ -1,0 +1,136 @@
+{
+  "fixtures": [
+    {
+      "id": "c0-tutorial",
+      "query": "python asyncio tutorial",
+      "page": 1,
+      "file": "c0-tutorial.html.gz",
+      "url": "https://www.google.com/search?q=python+asyncio+tutorial&hl=en",
+      "status": 200,
+      "engine": "gecko",
+      "source": "camoufox-headed.har 952b9eac",
+      "note": ""
+    },
+    {
+      "id": "c1-navigational",
+      "query": "wikipedia",
+      "page": 1,
+      "file": "c1-navigational.html.gz",
+      "url": "https://www.google.com/search?q=wikipedia&hl=en",
+      "status": 200,
+      "engine": "gecko",
+      "source": "cases/session.har",
+      "note": ""
+    },
+    {
+      "id": "c2-ai-overview-paa",
+      "query": "how tall is the eiffel tower",
+      "page": 1,
+      "file": "c2-ai-overview-paa.html.gz",
+      "url": "https://www.google.com/search?q=how+tall+is+the+eiffel+tower&hl=en",
+      "status": 200,
+      "engine": "gecko",
+      "source": "cases/session.har",
+      "note": "no classic featured snippet; AI Overview + PAA"
+    },
+    {
+      "id": "c3-paa",
+      "query": "what is asyncio in python",
+      "page": 1,
+      "file": "c3-paa.html.gz",
+      "url": "https://www.google.com/search?q=what+is+asyncio+in+python&hl=en",
+      "status": 200,
+      "engine": "gecko",
+      "source": "cases/session.har",
+      "note": ""
+    },
+    {
+      "id": "c3-paa-p2",
+      "query": "what is asyncio in python",
+      "page": 2,
+      "file": "c3-paa-p2.html.gz",
+      "url": "https://www.google.com/search?q=what+is+asyncio+in+python&hl=en&start=10",
+      "status": 200,
+      "engine": "gecko",
+      "source": "cases/session.har",
+      "note": ""
+    },
+    {
+      "id": "c4-commercial-no-ads",
+      "query": "car insurance quote",
+      "page": 1,
+      "file": "c4-commercial-no-ads.html.gz",
+      "url": "https://www.google.com/search?q=car+insurance+quote&hl=en",
+      "status": 200,
+      "engine": "gecko",
+      "source": "cases/session.har",
+      "note": "no ads in DOM; captured with uBlock Origin active (F-0006 correction), cause unknown"
+    },
+    {
+      "id": "c5-site-past-year",
+      "query": "asyncio site:python.org",
+      "page": 1,
+      "file": "c5-site-past-year.html.gz",
+      "url": "https://www.google.com/search?q=asyncio+site%3Apython.org&hl=en",
+      "status": 200,
+      "engine": "gecko",
+      "source": "cases/session.har",
+      "note": "tbs=qdr:y"
+    },
+    {
+      "id": "c6-no-results",
+      "query": "zxqv qwpl mmrt kkhh 9931",
+      "page": 1,
+      "file": "c6-no-results.html.gz",
+      "url": "https://www.google.com/search?q=zxqv+qwpl+mmrt+kkhh+9931&hl=en",
+      "status": 200,
+      "engine": "gecko",
+      "source": "cases/session.har",
+      "note": ""
+    },
+    {
+      "id": "c7-french-query",
+      "query": "meilleur restaurant tunis",
+      "page": 1,
+      "file": "c7-french-query.html.gz",
+      "url": "https://www.google.com/search?q=meilleur+restaurant+tunis&hl=en",
+      "status": 200,
+      "engine": "gecko",
+      "source": "cases/session.har",
+      "note": ""
+    },
+    {
+      "id": "c8-news",
+      "query": "nobel prize 2026",
+      "page": 1,
+      "file": "c8-news.html.gz",
+      "url": "https://www.google.com/search?q=nobel+prize+2026&hl=en",
+      "status": 200,
+      "engine": "gecko",
+      "source": "cases/session.har",
+      "note": ""
+    },
+    {
+      "id": "s1-captcha",
+      "query": "synthetic captcha",
+      "page": 1,
+      "file": "../synthetic/sorry-captcha.html",
+      "url": "https://www.google.com/sorry/index?continue=https://www.google.com/search%3Fq%3Dsynthetic",
+      "status": 429,
+      "engine": "gecko",
+      "source": "synthetic (F-0001)",
+      "note": "demo: what a CAPTCHA block looks like to callers"
+    },
+    {
+      "id": "s2-js-gate",
+      "query": "synthetic js gate",
+      "page": 1,
+      "file": "../synthetic/js-gate.html",
+      "url": "https://www.google.com/search?q=synthetic+js+gate&hl=en",
+      "status": 200,
+      "engine": "gecko",
+      "source": "synthetic (F-0002)",
+      "note": "demo: SearchGuard gate served to a non-JS client"
+    }
+  ]
+}

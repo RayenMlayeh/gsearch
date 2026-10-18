@@ -1,0 +1,21 @@
+# Raw evidence: HARs, screenshots and live result pages contain cookies, session identifiers and
+# third-party content. Never commit them. Findings in docs/findings/ reference them by filename + SHA-256.
+captures/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Local config and secrets (.env.example is the committed template)
+.env
+.env.*
+!.env.example
+*.local.toml

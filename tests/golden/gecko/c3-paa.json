@@ -1,0 +1,212 @@
+{
+  "state": "ok",
+  "selector_set": "gecko-2026_10",
+  "data": {
+    "organic": [
+      {
+        "position": 1,
+        "title": "asyncio — Asynchronous I/O",
+        "link": "https://www.google.com/goto?url=FIXTURE_6d22298e12122ea4",
+        "url": null,
+        "display_url": "https://docs.python.org › library › asyncio",
+        "domain": "docs.python.org",
+        "source_meta": null,
+        "snippet": "asyncio is a library to write concurrent code using the async/await syntax . asyncio is used as a foundation for multiple Python asynchronous frameworks",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 2,
+        "title": "Python's asyncio: A Hands-On Walkthrough",
+        "link": "https://www.google.com/goto?url=FIXTURE_5af626bcdf634788",
+        "url": null,
+        "display_url": "https://realpython.com › async-io-python",
+        "domain": "realpython.com",
+        "source_meta": null,
+        "snippet": "Python's asyncio library enables you to write concurrent code using the async and await keywords. The core building blocks of async I/O in ...",
+        "date": "Jul 30, 2025",
+        "sitelinks": [
+          {
+            "title": "Async I/O in Python With asyncio",
+            "link": "https://www.google.com/goto?url=FIXTURE_1af7507ae0309aa0",
+            "url": null
+          },
+          {
+            "title": "Other Async I/O Features in...",
+            "link": "https://www.google.com/goto?url=FIXTURE_7175d5126c931761",
+            "url": null
+          }
+        ]
+      },
+      {
+        "position": 3,
+        "title": "asyncio in Python",
+        "link": "https://www.google.com/goto?url=FIXTURE_d2d0b4306ee9342f",
+        "url": null,
+        "display_url": "https://www.geeksforgeeks.org › python › asyncio-in-p...",
+        "domain": "www.geeksforgeeks.org",
+        "source_meta": null,
+        "snippet": "Asyncio is a Python library that is used for concurrent programming , including the use of async iterator in Python. It is not multi-threading ...",
+        "date": "Jul 23, 2025",
+        "sitelinks": []
+      },
+      {
+        "position": 4,
+        "title": "Understanding asyncio in Python: A Beginner-Friendly Guide",
+        "link": "https://www.google.com/goto?url=FIXTURE_4eb34e7fb6ffc297",
+        "url": null,
+        "display_url": null,
+        "domain": null,
+        "source_meta": "1 year ago",
+        "snippet": "asyncio is a Python library that allows you to run tasks concurrently without creating multiple threads or processes.",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 5,
+        "title": "Python asyncio Module",
+        "link": "https://www.google.com/goto?url=FIXTURE_22becc71d7721020",
+        "url": null,
+        "display_url": "https://www.w3schools.com › Python › ref_module_asy...",
+        "domain": "www.w3schools.com",
+        "source_meta": null,
+        "snippet": "The asyncio module provides an event loop, tasks, and I/O primitives for concurrent code . Use async / await to write structured asynchronous programs, schedule ...",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 6,
+        "title": "Asyncio Architecture in Python: Event Loops, Tasks, and ...",
+        "link": "https://www.google.com/goto?url=FIXTURE_e193fc0b13f35879",
+        "url": null,
+        "display_url": "https://dev.to › imsushant12 › asyncio-architecture-in-p...",
+        "domain": "dev.to",
+        "source_meta": null,
+        "snippet": "Asyncio : Single thread, single process. It uses an event loop to run many tasks concurrently by switching between them when one task is waiting",
+        "date": "Oct 13, 2025",
+        "sitelinks": []
+      },
+      {
+        "position": 7,
+        "title": "Introduction to asyncio in Python | Patrick's Software Blog",
+        "link": "https://www.google.com/goto?url=FIXTURE_791d12b1d44cc592",
+        "url": null,
+        "display_url": "https://www.patricksoftwareblog.com › introduction_to_...",
+        "domain": "www.patricksoftwareblog.com",
+        "source_meta": null,
+        "snippet": "asyncio is built using coroutines , which are special functions that can suspend and resume their execution. Typically, the coroutines will all ...",
+        "date": "Jan 30, 2025",
+        "sitelinks": []
+      },
+      {
+        "position": 8,
+        "title": "Understanding Asyncio in Python",
+        "link": "https://www.google.com/goto?url=FIXTURE_6ab34a679a562157",
+        "url": null,
+        "display_url": "https://builtin.com › data-science › asyncio",
+        "domain": "builtin.com",
+        "source_meta": null,
+        "snippet": "Asyncio is a Python library used for writing concurrent, asynchronous code with async / await syntax, often for I/O-bound tasks, high-level structured network ...",
+        "date": null,
+        "sitelinks": []
+      }
+    ],
+    "ads": [],
+    "featured_snippet": null,
+    "ai_overview": {
+      "text": "asyncio is a built-in Python library used to write concurrent code using the async and await syntax . Python documentation Unlike multiprocessing or traditional threading, asyncio is single-threaded and single-process . It achieves concurrency through cooperative multitasking managed by a single mechanism called an event loop. YouTube · Corey Schafer +2 The Event Loop: The central coordinator (like an orchestra conductor) that manages and distributes the execution of different tasks. It runs one task at a time; when that task hits a blocking operation, it yields control back to the loop, which switches to another pending task. Python documentation +1 Coroutines: Functions declared with async def . Calling an async function does not execute it immediately; instead, it returns a coroutine object that must be explicitly run or awaited. YouTube · Tech With Tim +2 The await Keyword: Used to pause the execution of a coroutine. It tells the event loop: \"I am waiting for this external operation to finish. Go ahead and run something else in the meantime.\" Medium · Rohit Kushwaha +2 Concurrency Model Best Used For How It Works asyncio I/O-bound tasks (e.g., scraping web pages, API requests, database queries) Single thread. Tasks cooperatively hand off control while waiting for external resources. threading I/O-bound tasks with legacy code or blocking libraries. Multiple threads. The operating system forcefully switches between threads (preemptive multitasking). multiprocessing CPU-bound tasks (e.g., heavy math, machine learning, image processing) Spreads work across multiple CPU cores to achieve true parallelism. To execute an asynchronous program, you initiate the event loop using asyncio.run() . Non-blocking pauses are simulated using asyncio.sleep() instead of the standard standard time.sleep() (which would freeze the entire thread). YouTube · NeuralNine +3 python import asyncio async def fetch_data ( id ): print( f \" Starting fetch for item {id} ... \" ) # Simulate a network request (non-blocking pause) await asyncio.sleep( 2 ) print( f \" Finished fetch for item {id} ! \" ) return { \" data \" : id} async def main (): # Modern Python 3.11+ approach using Task Groups to run concurrently async with asyncio.TaskGroup() as tg : task1 = tg.create_task(fetch_data( 1 )) task2 = tg.create_task(fetch_data( 2 )) # Both tasks run concurrently; total wait time is ~2 seconds, not 4. print(task1.result()) print(task2.result()) # Entry point to kick off the event loop asyncio.run(main()) Use code with caution. It's not parallel processing: It does not run multiple lines of code at the exact same physical millisecond. It maximizes idle waiting periods to get more work done. YouTube · Corey Schafer +1 It requires async libraries: To benefit from asyncio , the packages you use must also be asynchronous (e.g., using httpx or aiohttp instead of requests for web calls). If you are building a specific script or application, let me know: What kind of task are you trying to optimize (e.g., web scraping, API building, file operations)? Which Python version are you targeting? I can provide a tailored code template or recommend the right async libraries for your stack. AI responses may include mistakes. Learn more Share public link This public link is valid for seven days and shares a thread, including any personal information that you added. This link or copies made by others cannot be deleted. If you share with third parties, their policies apply. Copy link Can’t copy the link right now. Please try again later. Facebook Gmail X Reddit WhatsApp Share Good response Bad response More About this response Saved time Clear Helpful Comprehensive Other Incorrect Inappropriate Not working Unhelpful Other A copy of this chat will be included. A copy of this chat and the content that you shared will be included. A copy of this chat and the content that you shared will be included. Submit Thanks for letting us know Google may use account and system data to understand your feedback and improve our services, subject to our privacy policy and Terms of Service . For legal issues, make a legal removal request .",
+      "sources": [
+        {
+          "title": "Python documentation",
+          "link": "https://www.google.com/goto?url=FIXTURE_f44a2be8cad5df30",
+          "url": null
+        },
+        {
+          "title": "YouTube · Corey Schafer",
+          "link": "https://www.google.com/goto?url=FIXTURE_bc06ff405287a93d",
+          "url": null
+        },
+        {
+          "title": "Python documentation",
+          "link": "https://www.google.com/goto?url=FIXTURE_2150aa716e4325ea",
+          "url": null
+        },
+        {
+          "title": "YouTube · Tech With Tim",
+          "link": "https://www.google.com/goto?url=FIXTURE_89f77201e83c57f7",
+          "url": null
+        },
+        {
+          "title": "Medium · Rohit Kushwaha",
+          "link": "https://www.google.com/goto?url=FIXTURE_92a924a1b5164e3d",
+          "url": null
+        },
+        {
+          "title": "YouTube · NeuralNine",
+          "link": "https://www.google.com/goto?url=FIXTURE_7630b953ff10274f",
+          "url": null
+        },
+        {
+          "title": "Learn more",
+          "link": "https://support.google.com/websearch?p=ai_overviews",
+          "url": "https://support.google.com/websearch?p=ai_overviews"
+        },
+        {
+          "title": "privacy policy",
+          "link": "https://policies.google.com/privacy",
+          "url": "https://policies.google.com/privacy"
+        },
+        {
+          "title": "Terms of Service",
+          "link": "https://policies.google.com/terms",
+          "url": "https://policies.google.com/terms"
+        },
+        {
+          "title": "make a legal removal request",
+          "link": "https://support.google.com/legal/answer/3110420",
+          "url": "https://support.google.com/legal/answer/3110420"
+        }
+      ]
+    },
+    "people_also_ask": [
+      {
+        "question": "What is the use of asyncio in Python?"
+      },
+      {
+        "question": "Is asyncio better than threading?"
+      },
+      {
+        "question": "Is asyncio part of FastAPI?"
+      },
+      {
+        "question": "Is asyncio part of Python?"
+      }
+    ],
+    "related_searches": [
+      "What is asyncio in python w3schools",
+      "Python asyncio examples",
+      "Python asyncio tutorial",
+      "Python async/await",
+      "Asyncio gather",
+      "Asyncio real Python",
+      "Python asyncio documentation",
+      "Asyncio sleep Python"
+    ],
+    "pagination": {
+      "current": 1,
+      "next_page": 2,
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    }
+  }
+}

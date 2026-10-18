@@ -1,0 +1,156 @@
+{
+  "state": "ok",
+  "selector_set": "gecko-2026_10",
+  "data": {
+    "organic": [
+      {
+        "position": 1,
+        "title": "Python's asyncio: A Hands-On Walkthrough",
+        "link": "https://www.google.com/goto?url=FIXTURE_c08519ecf7209417",
+        "url": null,
+        "display_url": "https://realpython.com › async-io-python",
+        "domain": "realpython.com",
+        "source_meta": null,
+        "snippet": "In this tutorial, you'll learn how Python asyncio works , how to define and run coroutines, and when to use asynchronous programming == 3600 ...",
+        "date": "Jul 30, 2025",
+        "sitelinks": [
+          {
+            "title": "Async I/O in Python With asyncio",
+            "link": "https://www.google.com/goto?url=FIXTURE_c3fb5c2be7e124bd",
+            "url": null
+          },
+          {
+            "title": "Other Async I/O Features in...",
+            "link": "https://www.google.com/goto?url=FIXTURE_8ad428c2c40279c7",
+            "url": null
+          }
+        ]
+      },
+      {
+        "position": 2,
+        "title": "A conceptual overview of asyncio",
+        "link": "https://www.google.com/goto?url=FIXTURE_c67a04b71b715567",
+        "url": null,
+        "display_url": "https://docs.python.org › howto › a-conceptual-overview...",
+        "domain": "docs.python.org",
+        "source_meta": null,
+        "snippet": "In part 1, we'll cover the main, high-level building blocks of asyncio : the event loop, coroutine functions, coroutine objects, tasks, and await . Event loop¶.",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 3,
+        "title": "Python Asyncio: The Complete Guide #10063",
+        "link": "https://www.google.com/goto?url=FIXTURE_f7a37e5adeb7c7fa",
+        "url": null,
+        "display_url": "https://github.com › orgs › micropython › discussions",
+        "domain": "github.com",
+        "source_meta": null,
+        "snippet": "I put together asynchronous-python , a comprehensive and hands-on guide that covers asynchronous programming in Python from core concepts to practical use cases.",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 4,
+        "title": "Python asyncio Module",
+        "link": "https://www.google.com/goto?url=FIXTURE_64d8c5a0b3e8a1bc",
+        "url": null,
+        "display_url": "https://www.w3schools.com › Python › ref_module_as...",
+        "domain": "www.w3schools.com",
+        "source_meta": null,
+        "snippet": "Use async / await to write structured asynchronous programs, schedule coroutines, and work with networking, subprocesses, and synchronization primitives.",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 5,
+        "title": "Mastering Python's asyncio: A Guide to Asynchronous ...",
+        "link": "https://www.google.com/goto?url=FIXTURE_154817ab6017e203",
+        "url": null,
+        "display_url": null,
+        "domain": null,
+        "source_meta": "2 years ago",
+        "snippet": "asyncio provides a framework for managing asynchronous I/O, event loops, coroutines, and tasks in Python . It enables developers to write ...",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 6,
+        "title": "asyncio in Python",
+        "link": "https://www.google.com/goto?url=FIXTURE_13d719af684b09e6",
+        "url": null,
+        "display_url": "https://www.geeksforgeeks.org › python › asyncio-in-p...",
+        "domain": "www.geeksforgeeks.org",
+        "source_meta": null,
+        "snippet": "Asynchronous Programming with Asyncio in Python. In the example below, we'll create a function and make it asynchronous using the async keyword .",
+        "date": "Jul 23, 2025",
+        "sitelinks": []
+      },
+      {
+        "position": 7,
+        "title": "Python Asyncio: The Complete Guide",
+        "link": "https://www.google.com/goto?url=FIXTURE_c7633ce868e721ab",
+        "url": null,
+        "display_url": null,
+        "domain": null,
+        "source_meta": "10+ comments · 3 years ago",
+        "snippet": "An introduction to async programming (Python asyncio for beginners) · r/Python - An introduction to async programming (Python asyncio for ...",
+        "date": null,
+        "sitelinks": [
+          {
+            "title": "Best resources for learning asyncio ? : r/ learnpython",
+            "link": "https://www.google.com/goto?url=FIXTURE_799eb860ce9a5b5e",
+            "url": null
+          },
+          {
+            "title": "Python & Async Simplified (high-level guide to asyncio )",
+            "link": "https://www.google.com/goto?url=FIXTURE_7d176cab8f499121",
+            "url": null
+          }
+        ]
+      },
+      {
+        "position": 8,
+        "title": "Introduction to asyncio in Python | Patrick's Software Blog",
+        "link": "https://www.google.com/goto?url=FIXTURE_680123cc72824851",
+        "url": null,
+        "display_url": "https://www.patricksoftwareblog.com › introduction_to...",
+        "domain": "www.patricksoftwareblog.com",
+        "source_meta": null,
+        "snippet": "This tutorial introduces the key concepts of asyncio , leading to a final application to to download user data concurrently from an external API.",
+        "date": "Jan 30, 2025",
+        "sitelinks": []
+      }
+    ],
+    "ads": [],
+    "featured_snippet": null,
+    "ai_overview": null,
+    "people_also_ask": [],
+    "related_searches": [
+      "Python asyncio tutorial pdf",
+      "Python asyncio tutorial w3schools",
+      "Python asyncio tutorial pdf free download",
+      "Python asyncio tutorial pdf download",
+      "Python asyncio example",
+      "Asyncio Python",
+      "Python asyncio vs threading",
+      "Real Python asyncio"
+    ],
+    "pagination": {
+      "current": 1,
+      "next_page": 2,
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    }
+  }
+}

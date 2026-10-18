@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    # Offline only: CI never contacts Google or a proxy.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e packages/gsearch-parse -e "packages/gsearch-core[live]" -e packages/gsearch-cli -e packages/gsearch-mcp
+          python -m pip install pytest anyio mypy ruff
+      - name: Lint
+        run: |
+          ruff check packages tests tools
+          ruff format --check packages tests tools
+      - name: Type check
+        run: mypy
+      - name: Tests
+        # The Camoufox browser binary is not downloaded in CI, so the tests that launch it are skipped.
+        # Locally, after `python -m camoufox fetch`, run plain `pytest` to include them.
+        env:
+          GSEARCH_SKIP_BROWSER: "1"
+        run: pytest

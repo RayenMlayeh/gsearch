@@ -1,0 +1,146 @@
+{
+  "state": "ok",
+  "selector_set": "gecko-2026_10",
+  "data": {
+    "organic": [
+      {
+        "position": 1,
+        "title": "Understanding Asyncio in Python",
+        "link": "https://www.google.com/goto?url=FIXTURE_6e5c8aa02bf7bfca",
+        "url": null,
+        "display_url": "https://builtin.com › data-science › asyncio",
+        "domain": "builtin.com",
+        "source_meta": null,
+        "snippet": "Asyncio is a Python library used for writing concurrent, asynchronous code with async / await syntax, often for I/O-bound tasks, high-level structured network ...",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 2,
+        "title": "A Deep Dive into the Event Loop | by Hyunil Kim | 딜리버스",
+        "link": "https://www.google.com/goto?url=FIXTURE_92acb1468e898027",
+        "url": null,
+        "display_url": null,
+        "domain": null,
+        "source_meta": "1 year ago",
+        "snippet": "Python's asyncio is a powerful library that enables concurrent programming through coroutines and the event loop pattern.",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 3,
+        "title": "Python Asyncio: The Complete Guide #10063",
+        "link": "https://www.google.com/goto?url=FIXTURE_3a694805be79a5aa",
+        "url": null,
+        "display_url": "https://github.com › orgs › micropython › discussions",
+        "domain": "github.com",
+        "source_meta": null,
+        "snippet": "I put together asynchronous-python, a comprehensive and hands-on guide that covers asynchronous programming in Python from core concepts to practical use cases.",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 4,
+        "title": "A conceptual overview of asyncio",
+        "link": "https://www.google.com/goto?url=FIXTURE_068c6568b05765e4",
+        "url": null,
+        "display_url": "https://docs.python.org › howto › a-conceptual-overview-...",
+        "domain": "docs.python.org",
+        "source_meta": null,
+        "snippet": "asyncio automatically associates tasks with the event loop for you . This automatic association was purposely designed into asyncio for the sake of simplicity.",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 5,
+        "title": "What Is Python Asyncio?",
+        "link": "https://www.google.com/goto?url=FIXTURE_3a849487edcddf47",
+        "url": null,
+        "display_url": "https://www.ituonline.com › tech-definitions › what-is-p...",
+        "domain": "www.ituonline.com",
+        "source_meta": null,
+        "snippet": "Python asyncio is Python's core approach to efficient asynchronous I/O and concurrency. It is built for workloads that wait on external systems ...",
+        "date": "Mar 28, 2024",
+        "sitelinks": []
+      },
+      {
+        "position": 6,
+        "title": "Get More Done with Python's asyncio",
+        "link": "https://www.google.com/goto?url=FIXTURE_bc6067d736dfb65d",
+        "url": null,
+        "display_url": "https://blogs.cisco.com › developer › pythonasyncio01",
+        "domain": "blogs.cisco.com",
+        "source_meta": null,
+        "snippet": "Learn how Python asyncio lets you do more work, more quickly while waiting for remote API servers to process your requests.",
+        "date": "Jun 22, 2021",
+        "sitelinks": []
+      },
+      {
+        "position": 7,
+        "title": "Asyncio support - python-can 4.6.1 documentation",
+        "link": "https://www.google.com/goto?url=FIXTURE_82d87f54c0df3e98",
+        "url": null,
+        "display_url": "https://python-can.readthedocs.io › stable › asyncio",
+        "domain": "python-can.readthedocs.io",
+        "source_meta": null,
+        "snippet": "The asyncio module built into Python 3.4 and later can be used to write asynchronous code in a single thread . This library supports receiving messages ...",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 8,
+        "title": "Asynchronous programming in Python with async functions ...",
+        "link": "https://www.google.com/goto?url=FIXTURE_38c83e9cf901e805",
+        "url": null,
+        "display_url": "https://blog.devgenius.io › asynchronous-programming-...",
+        "domain": "blog.devgenius.io",
+        "source_meta": null,
+        "snippet": "It allows your program to do a tonne of things all at once (in parallel or asynchronously) as opposed to the step-by-step way of doing things ...",
+        "date": "Feb 5, 2024",
+        "sitelinks": []
+      },
+      {
+        "position": 9,
+        "title": "python - How does asyncio actually work?",
+        "link": "https://www.google.com/goto?url=FIXTURE_ca56003fb03617da",
+        "url": null,
+        "display_url": null,
+        "domain": null,
+        "source_meta": "6 answers · 8 years ago",
+        "snippet": "This question is motivated by my another question: How to await in cdef? There are tons of articles and blog posts on the web about asyncio, but they ...",
+        "date": null,
+        "sitelinks": []
+      }
+    ],
+    "ads": [],
+    "featured_snippet": null,
+    "ai_overview": null,
+    "people_also_ask": [],
+    "related_searches": [
+      "What is asyncio in python w3schools",
+      "Python asyncio examples",
+      "Python asyncio tutorial",
+      "Python async/await",
+      "Asyncio gather",
+      "Asyncio real Python",
+      "Python asyncio documentation",
+      "Asyncio sleep Python"
+    ],
+    "pagination": {
+      "current": 2,
+      "next_page": 3,
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    }
+  }
+}

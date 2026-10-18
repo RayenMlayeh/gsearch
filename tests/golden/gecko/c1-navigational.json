@@ -1,0 +1,213 @@
+{
+  "state": "ok",
+  "selector_set": "gecko-2026_10",
+  "data": {
+    "organic": [
+      {
+        "position": 1,
+        "title": "Wikipedia",
+        "link": "https://www.google.com/goto?url=FIXTURE_76b9e18e17f2055e",
+        "url": null,
+        "display_url": "https://www.wikipedia.org",
+        "domain": "www.wikipedia.org",
+        "source_meta": null,
+        "snippet": "Wikipedia is a free online encyclopedia, created and edited by volunteers around the world and hosted by the Wikimedia Foundation.",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 2,
+        "title": "Wikipedia, the free encyclopedia",
+        "link": "https://www.google.com/goto?url=FIXTURE_764f57034bf21a80",
+        "url": null,
+        "display_url": "https://en.wikipedia.org › wiki › Main_Page",
+        "domain": "en.wikipedia.org",
+        "source_meta": null,
+        "snippet": "Welcome to Wikipedia , the free encyclopedia that anyone can edit. 273,114 active editors 7,253,914 articles in English",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 3,
+        "title": "Wikipédia, l'encyclopédie libre",
+        "link": "https://www.google.com/goto?url=FIXTURE_a761ffd4e8bd64eb",
+        "url": null,
+        "display_url": "https://fr.wikipedia.org › wiki › Wi...",
+        "domain": "fr.wikipedia.org",
+        "source_meta": null,
+        "snippet": "Actualités · Concours du meilleur sommelier du monde · Championnats d'Europe de tennis de table · Championnats du monde de cyclisme sur piste · Concours ...",
+        "date": null,
+        "sitelinks": [
+          {
+            "title": "Translate this page",
+            "link": "https://www.google.com/goto?url=FIXTURE_beae22abf41c64f6",
+            "url": null
+          }
+        ]
+      },
+      {
+        "position": 4,
+        "title": "Wikipedia - Apps on Google Play",
+        "link": "https://play.google.com/store/apps/details?id=org.wikipedia&hl=en",
+        "url": "https://play.google.com/store/apps/details?id=org.wikipedia&hl=en",
+        "display_url": "https://play.google.com › store › apps › details › id=org....",
+        "domain": "play.google.com",
+        "source_meta": null,
+        "snippet": "With the official Wikipedia app, you can search and explore 40+ million articles in 300+ languages , no matter where you are.",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 5,
+        "title": "Wikipedia",
+        "link": "https://www.google.com/goto?url=FIXTURE_60a480f64472af0b",
+        "url": null,
+        "display_url": "https://en.wikipedia.org › wiki › Wikipedia",
+        "domain": "en.wikipedia.org",
+        "source_meta": null,
+        "snippet": "Wikipedia [e] is a free online encyclopedia written and maintained. Wikipedia is the largest and most read reference work in history.",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 6,
+        "title": "Wikimedia Commons",
+        "link": "https://www.google.com/goto?url=FIXTURE_28231b59c8197b85",
+        "url": null,
+        "display_url": "https://commons.wikimedia.org › wiki › Main_Page",
+        "domain": "commons.wikimedia.org",
+        "source_meta": null,
+        "snippet": "Wikimedia Commons is part of the non-profit, multilingual, free-content Wikimedia family. Wikipedia Encyclopedia. Wiktionary Dictionary & thesaurus.",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 7,
+        "title": "Wikipedia.fr",
+        "link": "https://www.google.com/goto?url=FIXTURE_03d82c42f1a1325c",
+        "url": null,
+        "display_url": "https://www.wikipedia.fr",
+        "domain": "www.wikipedia.fr",
+        "source_meta": null,
+        "snippet": "No information is available for this page. Learn why",
+        "date": null,
+        "sitelinks": [
+          {
+            "title": "Translate this page",
+            "link": "https://www.google.com/goto?url=FIXTURE_7f6fe2860cf8a9c3",
+            "url": null
+          }
+        ]
+      },
+      {
+        "position": 8,
+        "title": "Wikipedia (@wikipedia) • Instagram photos and videos",
+        "link": "https://www.google.com/goto?url=FIXTURE_d2ae9074562a9b5a",
+        "url": null,
+        "display_url": null,
+        "domain": null,
+        "source_meta": "835.5K+ followers",
+        "snippet": "Most of the photos on Wikipedia come from Wikimedia Commons, upload millions of images, videos, and audio files. Wikipedia began in 2001 … er review and ...",
+        "date": null,
+        "sitelinks": []
+      },
+      {
+        "position": 9,
+        "title": "ويكيبيديا، الموسوعة الحرة",
+        "link": "https://www.google.com/goto?url=FIXTURE_59245c344749610e",
+        "url": null,
+        "display_url": "https://ar.wikipedia.org › wiki › ال...",
+        "domain": "ar.wikipedia.org",
+        "source_meta": null,
+        "snippet": "طَرْفايَة هِيَ مَدينَة مَغْرِبية ساحِلِية، تَقَعُ عَلَى مُسْتَوى رَأسْ جُوبِي، بِالجَنوب ٱلْغَرْبي للمَغْرِب، عَلى ساحِل اَلْمُحِيط اَلْأَطلَسي.",
+        "date": null,
+        "sitelinks": [
+          {
+            "title": "Translate this page",
+            "link": "https://www.google.com/goto?url=FIXTURE_1c5a379632aa6547",
+            "url": null
+          }
+        ]
+      }
+    ],
+    "ads": [],
+    "featured_snippet": null,
+    "ai_overview": {
+      "text": "Wikipedia is a free, multilingual online encyclopedia written and maintained by a community of volunteer editors through open collaboration. Wikipedia +1 Founders: Jimmy Wales and Larry Sanger Wikipedia Launch Date: January 15, 2001 (started January 9 as part of Nupedia) Wikipedia Host Organization: Wikimedia Foundation , a non-profit based in San Francisco, California Wikipedia +1 Software: Powered by MediaWiki Scale: Over 64 million articles viewed more than 15 billion times every month across hundreds of languages Facebook · Wikimedia Foundation Would you like to search for a specific article or topic on Wikipedia ? Learn more Share public link This public link is valid for seven days and shares a thread, including any personal information that you added. This link or copies made by others cannot be deleted. If you share with third parties, their policies apply. Copy link Can’t copy the link right now. Please try again later. Facebook Gmail X Reddit WhatsApp Share Good response Bad response More About this response Saved time Clear Helpful Comprehensive Other Incorrect Inappropriate Not working Unhelpful Other A copy of this chat will be included. A copy of this chat and the content that you shared will be included. A copy of this chat and the content that you shared will be included. Submit Thanks for letting us know Google may use account and system data to understand your feedback and improve our services, subject to our privacy policy and Terms of Service . For legal issues, make a legal removal request .",
+      "sources": [
+        {
+          "title": "Wikipedia",
+          "link": "https://www.google.com/goto?url=FIXTURE_b2f5a46f3800535c",
+          "url": null
+        },
+        {
+          "title": "Wikipedia",
+          "link": "https://www.google.com/goto?url=FIXTURE_796cf6aac47ed92a",
+          "url": null
+        },
+        {
+          "title": "Wikimedia Foundation",
+          "link": "https://www.google.com/goto?url=FIXTURE_a488cae717a47f7a",
+          "url": null
+        },
+        {
+          "title": "MediaWiki",
+          "link": "https://www.google.com/goto?url=FIXTURE_a612d1a2f73adc47",
+          "url": null
+        },
+        {
+          "title": "Facebook · Wikimedia Foundation",
+          "link": "https://www.google.com/goto?url=FIXTURE_0db2657663574528",
+          "url": null
+        },
+        {
+          "title": "Learn more",
+          "link": "https://support.google.com/websearch?p=ai_overviews",
+          "url": "https://support.google.com/websearch?p=ai_overviews"
+        },
+        {
+          "title": "privacy policy",
+          "link": "https://policies.google.com/privacy",
+          "url": "https://policies.google.com/privacy"
+        },
+        {
+          "title": "Terms of Service",
+          "link": "https://policies.google.com/terms",
+          "url": "https://policies.google.com/terms"
+        },
+        {
+          "title": "make a legal removal request",
+          "link": "https://support.google.com/legal/answer/3110420",
+          "url": "https://support.google.com/legal/answer/3110420"
+        }
+      ]
+    },
+    "people_also_ask": [],
+    "related_searches": [
+      "Wikipedia search",
+      "New Wikipedia",
+      "Wikipedia login",
+      "Wikipedia history",
+      "Wikipedia search in English",
+      "Wikipedia company",
+      "Wikipedia app",
+      "Wikipedia account"
+    ],
+    "pagination": {
+      "current": 1,
+      "next_page": 2,
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    }
+  }
+}

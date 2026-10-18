@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="t d">
+  <title id="t">gsearch</title>
+  <desc id="d">gsearch: Google Search for AI agents. Real results as clean JSON, over MCP.</desc>
+  <defs>
+    <style>
+      .f { font-family: "Google Sans", "Product Sans", Roboto, "Segoe UI", Arial, sans-serif; }
+      .m { font-family: "Roboto Mono", "Cascadia Code", Consolas, monospace; }
+    </style>
+    <filter id="shadow" x="-10%" y="-30%" width="120%" height="170%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#202124" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="1199" height="359" rx="20" fill="#ffffff" stroke="#dadce0"/>
+
+  <!-- name -->
+  <g transform="translate(70 92)">
+    <circle cx="10" cy="10" r="10" fill="#4285F4"/>
+    <circle cx="36" cy="10" r="10" fill="#EA4335"/>
+    <circle cx="62" cy="10" r="10" fill="#FBBC05"/>
+    <circle cx="88" cy="10" r="10" fill="#34A853"/>
+  </g>
+  <text x="66" y="190" class="f" font-size="78" font-weight="500" fill="#202124">gsearch</text>
+  <text x="70" y="236" class="f" font-size="28" fill="#3c4043">Google Search for AI agents</text>
+  <text x="70" y="270" class="f" font-size="20" fill="#5f6368">Real results as clean JSON, over MCP. Any proxy.</text>
+
+  <g class="f" font-size="15" font-weight="500">
+    <rect x="70" y="296" width="62" height="30" rx="15" fill="#e8f0fe"/>
+    <text x="101" y="316" text-anchor="middle" fill="#1967d2">MCP</text>
+    <rect x="142" y="296" width="56" height="30" rx="15" fill="#fce8e6"/>
+    <text x="170" y="316" text-anchor="middle" fill="#c5221f">CLI</text>
+    <rect x="208" y="296" width="78" height="30" rx="15" fill="#fef7e0"/>
+    <text x="247" y="316" text-anchor="middle" fill="#b06000">Python</text>
+    <rect x="296" y="296" width="100" height="30" rx="15" fill="#e6f4ea"/>
+    <text x="346" y="316" text-anchor="middle" fill="#137333">Any proxy</text>
+  </g>
+
+  <!-- search box -->
+  <g transform="translate(640 48)">
+    <rect width="500" height="52" rx="26" fill="#ffffff" stroke="#dfe1e5" filter="url(#shadow)"/>
+    <circle cx="30" cy="25" r="8" fill="none" stroke="#9aa0a6" stroke-width="2.5"/>
+    <path d="M36 31 L42 37" stroke="#9aa0a6" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="58" y="32" class="f" font-size="18" fill="#202124">what is asyncio in python</text>
+    <rect x="456" y="14" width="2" height="24" fill="#dadce0"/>
+    <circle cx="478" cy="26" r="3" fill="#4285F4"/>
+    <circle cx="486" cy="26" r="3" fill="#EA4335"/>
+  </g>
+
+  <!-- json card -->
+  <g transform="translate(640 124)">
+    <rect width="500" height="196" rx="16" fill="#f8f9fa" stroke="#dadce0"/>
+    <g class="m" font-size="15">
+      <text x="24" y="38" fill="#5f6368">{</text>
+      <text x="44" y="66"><tspan fill="#1a73e8">"title"</tspan><tspan fill="#5f6368">: </tspan><tspan fill="#188038">"asyncio — Asynchronous I/O"</tspan><tspan fill="#5f6368">,</tspan></text>
+      <text x="44" y="94"><tspan fill="#1a73e8">"url"</tspan><tspan fill="#5f6368">: </tspan><tspan fill="#188038">"https://docs.python.org/3/library/…"</tspan><tspan fill="#5f6368">,</tspan></text>
+      <text x="44" y="122"><tspan fill="#1a73e8">"ai_overview"</tspan><tspan fill="#5f6368">: { … }, </tspan><tspan fill="#1a73e8">"people_also_ask"</tspan><tspan fill="#5f6368">: [ … ],</tspan></text>
+      <text x="44" y="150"><tspan fill="#1a73e8">"untrusted_content"</tspan><tspan fill="#5f6368">: </tspan><tspan fill="#c5221f">true</tspan></text>
+      <text x="24" y="178" fill="#5f6368">}</text>
+    </g>
+  </g>
+</svg>

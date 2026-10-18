@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="t d">
+  <title id="t">Works with any proxy</title>
+  <desc id="d">Three ways to run: rotating residential proxies get a new IP for every search; static proxies (VPS, datacenter, ISP) each keep one warm session and take turns; with no proxy, one warm session on your own IP. Accepted formats: host:port, host:port:user:pass, user:pass@host:port, user:pass:host:port, with http, https or socks5.</desc>
+  <defs>
+    <style>
+      .f { font-family: "Google Sans", "Product Sans", Roboto, "Segoe UI", Arial, sans-serif; }
+      .m { font-family: "Roboto Mono", "Cascadia Code", Consolas, monospace; }
+    </style>
+  </defs>
+  <rect x="0.5" y="0.5" width="1199" height="519" rx="20" fill="#ffffff" stroke="#dadce0"/>
+  <text x="40" y="52" class="f" font-size="26" font-weight="500" fill="#202124">Works with any proxy</text>
+  <text x="40" y="80" class="f" font-size="16" fill="#5f6368">gsearch recognises the kind from the login and uses each one the way that worked best in testing.</text>
+
+  <!-- rotating -->
+  <g transform="translate(40 108)">
+    <rect width="360" height="290" rx="16" fill="#ffffff" stroke="#dadce0"/>
+    <rect width="360" height="6" rx="3" fill="#4285F4"/>
+    <g transform="translate(24 32)">
+      <circle cx="12" cy="12" r="10" fill="#4285F4"/>
+      <circle cx="40" cy="12" r="10" fill="#4285F4" opacity="0.6"/>
+      <circle cx="68" cy="12" r="10" fill="#4285F4" opacity="0.3"/>
+    </g>
+    <text x="24" y="90" class="f" font-size="20" font-weight="500" fill="#202124">Rotating residential</text>
+    <text x="24" y="114" class="f" font-size="14" fill="#1967d2" font-weight="500">Best for volume</text>
+    <text x="24" y="146" class="f" font-size="14" fill="#3c4043">A session id in the login means a new IP</text>
+    <text x="24" y="166" class="f" font-size="14" fill="#3c4043">for every search, with a new browser.</text>
+    <text x="24" y="186" class="f" font-size="14" fill="#3c4043">Countries in the login are checked.</text>
+    <rect x="16" y="210" width="328" height="58" rx="10" fill="#f8f9fa"/>
+    <text x="28" y="234" class="m" font-size="12" fill="#3c4043">gate.example.com:7000:</text>
+    <text x="28" y="254" class="m" font-size="12" fill="#3c4043">user-country-us-<tspan fill="#1967d2" font-weight="bold">sid-{sid}</tspan>:pass</text>
+  </g>
+
+  <!-- static -->
+  <g transform="translate(420 108)">
+    <rect width="360" height="290" rx="16" fill="#ffffff" stroke="#dadce0"/>
+    <rect width="360" height="6" rx="3" fill="#34A853"/>
+    <g transform="translate(24 26)" fill="#34A853">
+      <rect width="34" height="10" rx="3"/>
+      <rect y="13" width="34" height="10" rx="3" opacity="0.7"/>
+      <rect x="44" width="34" height="10" rx="3" opacity="0.7"/>
+      <rect x="44" y="13" width="34" height="10" rx="3"/>
+    </g>
+    <text x="24" y="90" class="f" font-size="20" font-weight="500" fill="#202124">Static, VPS, datacenter</text>
+    <text x="24" y="114" class="f" font-size="14" fill="#137333" font-weight="500">One proxy or a whole list</text>
+    <text x="24" y="146" class="f" font-size="14" fill="#3c4043">Each IP keeps one warm session and the</text>
+    <text x="24" y="166" class="f" font-size="14" fill="#3c4043">IPs take turns. An IP that meets a</text>
+    <text x="24" y="186" class="f" font-size="14" fill="#3c4043">CAPTCHA rests until tomorrow.</text>
+    <rect x="16" y="210" width="328" height="58" rx="10" fill="#f8f9fa"/>
+    <text x="28" y="234" class="m" font-size="12" fill="#3c4043">socks5://user:pass@203.0.113.10:1080</text>
+    <text x="28" y="254" class="m" font-size="12" fill="#3c4043">203.0.113.11:3128, proxies.txt …</text>
+  </g>
+
+  <!-- no proxy -->
+  <g transform="translate(800 108)">
+    <rect width="360" height="290" rx="16" fill="#ffffff" stroke="#dadce0"/>
+    <rect width="360" height="6" rx="3" fill="#FBBC05"/>
+    <g transform="translate(24 24)">
+      <path d="M2 16 L18 2 L34 16 V30 H2 Z" fill="#FBBC05"/>
+      <rect x="13" y="19" width="10" height="11" fill="#ffffff"/>
+    </g>
+    <text x="24" y="90" class="f" font-size="20" font-weight="500" fill="#202124">No proxy</text>
+    <text x="24" y="114" class="f" font-size="14" fill="#b06000" font-weight="500">To try it out</text>
+    <text x="24" y="146" class="f" font-size="14" fill="#3c4043">Your own IP, one warm session: about</text>
+    <text x="24" y="166" class="f" font-size="14" fill="#3c4043">1.2 s per search, capped at 20 an hour</text>
+    <text x="24" y="186" class="f" font-size="14" fill="#3c4043">and 150 a day to protect your IP.</text>
+    <rect x="16" y="210" width="328" height="58" rx="10" fill="#f8f9fa"/>
+    <text x="28" y="244" class="m" font-size="12" fill="#5f6368"># leave GSEARCH_PROXY unset</text>
+  </g>
+
+  <!-- formats -->
+  <g transform="translate(40 420)">
+    <rect width="1120" height="70" rx="14" fill="#f1f3f4"/>
+    <text x="24" y="30" class="f" font-size="15" font-weight="500" fill="#202124">Any format</text>
+    <g class="m" font-size="13" fill="#3c4043">
+      <text x="24" y="54">host:port · host:port:user:pass · user:pass@host:port · user:pass:host:port</text>
+      <text x="700" y="54"><tspan fill="#1967d2">http://</tspan> · <tspan fill="#1967d2">https://</tspan> · <tspan fill="#1967d2">socks5://</tspan> · lists · a file</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,165 @@
+{
+  "state": "ok",
+  "selector_set": "gecko-2026_10",
+  "data": {
+    "organic": [
+      {
+        "position": 1,
+        "title": "Coroutines and tasks",
+        "link": "https://www.google.com/goto?url=FIXTURE_95a21349be767b57",
+        "url": null,
+        "display_url": "https://docs.python.org › library › asyncio-task",
+        "domain": "docs.python.org",
+        "source_meta": null,
+        "snippet": "This section outlines high-level asyncio APIs to work with coroutines and Tasks. Coroutines, Awaitables, Creating tasks, Task cancellation, Task groups, ...",
+        "date": "17 hours ago",
+        "sitelinks": []
+      },
+      {
+        "position": 2,
+        "title": "Programmer avec asyncio",
+        "link": "https://www.google.com/goto?url=FIXTURE_44e12c079a0be4ce",
+        "url": null,
+        "display_url": "https://docs.python.org › asyncio-dev",
+        "domain": "docs.python.org",
+        "source_meta": null,
+        "snippet": "La programmation asynchrone est différente de la programmation « séquentielle » classique . Cette page liste les pièges et erreurs communs que le développeur ...",
+        "date": "Oct 1, 2026",
+        "sitelinks": [
+          {
+            "title": "Translate this page",
+            "link": "https://www.google.com/goto?url=FIXTURE_5ae826382c56b5e8",
+            "url": null
+          }
+        ]
+      },
+      {
+        "position": 3,
+        "title": "Command-line introspection tools",
+        "link": "https://www.google.com/goto?url=FIXTURE_f0c243da4761f112",
+        "url": null,
+        "display_url": "https://docs.python.org › library › asyncio-tools",
+        "domain": "docs.python.org",
+        "source_meta": null,
+        "snippet": "The asyncio module can be invoked as a script via python -m asyncio to inspect the task graph of another running Python process without modifying it or ...",
+        "date": "Oct 7, 2026",
+        "sitelinks": []
+      },
+      {
+        "position": 4,
+        "title": "Coroutines and tasks",
+        "link": "https://www.google.com/goto?url=FIXTURE_44185720131e0e2b",
+        "url": null,
+        "display_url": "https://docs.python.org › asyncio-task",
+        "domain": "docs.python.org",
+        "source_meta": null,
+        "snippet": "To actually run a coroutine, asyncio provides the following mechanisms : A task factory for eager task execution. coroutines begin execution synchronously ...",
+        "date": "2 days ago",
+        "sitelinks": [
+          {
+            "title": "Translate this page",
+            "link": "https://www.google.com/goto?url=FIXTURE_afc92ad8f3d6e67f",
+            "url": null
+          }
+        ]
+      },
+      {
+        "position": 5,
+        "title": "Asyncio streams - what is guaranteed? - Async-SIG",
+        "link": "https://www.google.com/goto?url=FIXTURE_daf3b87f3985138e",
+        "url": null,
+        "display_url": "https://discuss.python.org › asyncio-streams-what-is-gua...",
+        "domain": "discuss.python.org",
+        "source_meta": null,
+        "snippet": "Asyncio streams - Imagine a simple TCP chat server such. What guarantees become weakened when not explicitly draining?",
+        "date": "Apr 29, 2026",
+        "sitelinks": []
+      },
+      {
+        "position": 6,
+        "title": "Pain point in asyncio: Potentially-failing tasks - Async-SIG",
+        "link": "https://www.google.com/goto?url=FIXTURE_76b9e3cbc045867a",
+        "url": null,
+        "display_url": "https://discuss.python.org › pain-point-in-asyncio-potent...",
+        "domain": "discuss.python.org",
+        "source_meta": null,
+        "snippet": "The most valuable tool for debugging Python code is the exception. it should spawn a task, but main runs for longer. asyncio has the best error handling story . ...",
+        "date": "Mar 12, 2026",
+        "sitelinks": []
+      },
+      {
+        "position": 7,
+        "title": "Understanding asyncio.subprocess.Process garbage collection",
+        "link": "https://www.google.com/goto?url=FIXTURE_81f13abca317a9db",
+        "url": null,
+        "display_url": "https://discuss.python.org › understanding-asyncio-subp...",
+        "domain": "discuss.python.org",
+        "source_meta": null,
+        "snippet": "If the process object is garbage collected while the process is still running, the child process will be killed.",
+        "date": "Feb 2, 2026",
+        "sitelinks": []
+      },
+      {
+        "position": 8,
+        "title": "Asyncio timeout on event wait - Python Discussions",
+        "link": "https://www.google.com/goto?url=FIXTURE_5b2d40d6cb3c2ded",
+        "url": null,
+        "display_url": "https://discuss.python.org › asyncio-timeout-on-event-wait",
+        "domain": "discuss.python.org",
+        "source_meta": null,
+        "snippet": "When the event and the timeout occur almost in the same time, we could have both the timeout and the event. An await cannot both succeed and fail. Event like ...",
+        "date": "Feb 4, 2026",
+        "sitelinks": []
+      },
+      {
+        "position": 9,
+        "title": "kubernetes-asyncio",
+        "link": "https://www.google.com/goto?url=FIXTURE_660ccc9c12358741",
+        "url": null,
+        "display_url": "https://pypi.python.org › pypi › kubernetes_asyncio",
+        "domain": "pypi.python.org",
+        "source_meta": null,
+        "snippet": "Asynchronous (AsyncIO) client library for the Kubernetes API . This library is created in the same way as the official https://github.com/kubernetes ...",
+        "date": "Jun 4, 2026",
+        "sitelinks": []
+      },
+      {
+        "position": 10,
+        "title": "threading — Thread-based parallelism — Python 3.15.0 ...",
+        "link": "https://www.google.com/goto?url=FIXTURE_a0b54b1c0ff80b2b",
+        "url": null,
+        "display_url": "https://docs.python.org › library › threading",
+        "domain": "docs.python.org",
+        "source_meta": null,
+        "snippet": "asyncio offers an alternative approach to achieving task level concurrency without requiring the use of multiple operating system threads. Note. In the ...",
+        "date": "24 hours ago",
+        "sitelinks": []
+      }
+    ],
+    "ads": [],
+    "featured_snippet": null,
+    "ai_overview": null,
+    "people_also_ask": [],
+    "related_searches": [
+      "Asyncio python",
+      "Asyncio example",
+      "Asyncio tutorial"
+    ],
+    "pagination": {
+      "current": 1,
+      "next_page": 2,
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    }
+  }
+}

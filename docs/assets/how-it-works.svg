@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="t d">
+  <title id="t">How one search works</title>
+  <desc id="d">The agent asks over MCP; gsearch takes a fresh proxy IP and checks its country; a real Firefox (Camoufox) types the query into its address bar; the page becomes JSON and every link is resolved on the same IP; then the browser and IP are closed. A blocked IP is dropped and the search retried on a fresh one, up to four times.</desc>
+  <defs>
+    <style>
+      .f { font-family: "Google Sans", "Product Sans", Roboto, "Segoe UI", Arial, sans-serif; }
+      .m { font-family: "Roboto Mono", "Cascadia Code", Consolas, monospace; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9aa0a6"/>
+    </marker>
+  </defs>
+  <rect x="0.5" y="0.5" width="1199" height="519" rx="20" fill="#ffffff" stroke="#dadce0"/>
+  <text x="40" y="52" class="f" font-size="26" font-weight="500" fill="#202124">How one search works</text>
+  <text x="40" y="80" class="f" font-size="16" fill="#5f6368">With a rotating proxy: a new IP and a new browser for every search, closed when it is done.</text>
+
+  <!-- arrows between cards -->
+  <g stroke="#9aa0a6" stroke-width="2" marker-end="url(#arrow)">
+    <line x1="246" y1="200" x2="264" y2="200"/>
+    <line x1="472" y1="200" x2="490" y2="200"/>
+    <line x1="698" y1="200" x2="716" y2="200"/>
+    <line x1="924" y1="200" x2="942" y2="200"/>
+  </g>
+
+  <!-- 1 agent -->
+  <g transform="translate(40 110)">
+    <rect width="206" height="210" rx="16" fill="#ffffff" stroke="#dadce0"/>
+    <rect width="206" height="6" rx="3" fill="#4285F4"/>
+    <circle cx="44" cy="54" r="26" fill="#e8f0fe"/>
+    <path d="M30 44 h28 a4 4 0 0 1 4 4 v14 a4 4 0 0 1 -4 4 h-16 l-8 7 v-7 h-4 a4 4 0 0 1 -4 -4 v-14 a4 4 0 0 1 4 -4 z" fill="#4285F4"/>
+    <text x="80" y="50" class="f" font-size="13" fill="#5f6368">STEP 1</text>
+    <text x="80" y="70" class="f" font-size="18" font-weight="500" fill="#202124">Agent asks</text>
+    <text x="20" y="112" class="f" font-size="14" fill="#3c4043">Claude, Cursor or any</text>
+    <text x="20" y="132" class="f" font-size="14" fill="#3c4043">MCP client calls</text>
+    <text x="20" y="160" class="m" font-size="13" fill="#1967d2">google_search(</text>
+    <text x="20" y="180" class="m" font-size="13" fill="#188038">  "asyncio python")</text>
+  </g>
+
+  <!-- 2 fresh IP -->
+  <g transform="translate(266 110)">
+    <rect width="206" height="210" rx="16" fill="#ffffff" stroke="#dadce0"/>
+    <rect width="206" height="6" rx="3" fill="#EA4335"/>
+    <circle cx="44" cy="54" r="26" fill="#fce8e6"/>
+    <circle cx="44" cy="54" r="15" fill="none" stroke="#EA4335" stroke-width="3"/>
+    <ellipse cx="44" cy="54" rx="6" ry="15" fill="none" stroke="#EA4335" stroke-width="2.5"/>
+    <line x1="29" y1="54" x2="59" y2="54" stroke="#EA4335" stroke-width="2.5"/>
+    <text x="80" y="50" class="f" font-size="13" fill="#5f6368">STEP 2</text>
+    <text x="80" y="70" class="f" font-size="18" font-weight="500" fill="#202124">Fresh IP</text>
+    <text x="20" y="112" class="f" font-size="14" fill="#3c4043">A new proxy session.</text>
+    <text x="20" y="132" class="f" font-size="14" fill="#3c4043">Dead, or in the wrong</text>
+    <text x="20" y="152" class="f" font-size="14" fill="#3c4043">country? Dropped before</text>
+    <text x="20" y="172" class="f" font-size="14" fill="#3c4043">the browser starts.</text>
+  </g>
+
+  <!-- 3 real firefox -->
+  <g transform="translate(492 110)">
+    <rect width="206" height="210" rx="16" fill="#ffffff" stroke="#dadce0"/>
+    <rect width="206" height="6" rx="3" fill="#FBBC05"/>
+    <circle cx="44" cy="54" r="26" fill="#fef7e0"/>
+    <rect x="28" y="42" width="32" height="24" rx="4" fill="none" stroke="#F29900" stroke-width="2.5"/>
+    <line x1="28" y1="49" x2="60" y2="49" stroke="#F29900" stroke-width="2.5"/>
+    <text x="80" y="50" class="f" font-size="13" fill="#5f6368">STEP 3</text>
+    <text x="80" y="70" class="f" font-size="18" font-weight="500" fill="#202124">Real Firefox</text>
+    <text x="20" y="112" class="f" font-size="14" fill="#3c4043">Camoufox with a real</text>
+    <text x="20" y="132" class="f" font-size="14" fill="#3c4043">device fingerprint types</text>
+    <text x="20" y="152" class="f" font-size="14" fill="#3c4043">the query into its</text>
+    <text x="20" y="172" class="f" font-size="14" fill="#3c4043">address bar.</text>
+  </g>
+
+  <!-- 4 clean json -->
+  <g transform="translate(718 110)">
+    <rect width="206" height="210" rx="16" fill="#ffffff" stroke="#dadce0"/>
+    <rect width="206" height="6" rx="3" fill="#34A853"/>
+    <circle cx="44" cy="54" r="26" fill="#e6f4ea"/>
+    <text x="44" y="62" class="m" font-size="22" font-weight="bold" text-anchor="middle" fill="#34A853">{ }</text>
+    <text x="80" y="50" class="f" font-size="13" fill="#5f6368">STEP 4</text>
+    <text x="80" y="70" class="f" font-size="18" font-weight="500" fill="#202124">Clean JSON</text>
+    <text x="20" y="112" class="f" font-size="14" fill="#3c4043">The page is parsed and</text>
+    <text x="20" y="132" class="f" font-size="14" fill="#3c4043">every result link is</text>
+    <text x="20" y="152" class="f" font-size="14" fill="#3c4043">resolved to its real URL,</text>
+    <text x="20" y="172" class="f" font-size="14" fill="#3c4043">on the same IP.</text>
+  </g>
+
+  <!-- 5 closed -->
+  <g transform="translate(944 110)">
+    <rect width="216" height="210" rx="16" fill="#ffffff" stroke="#dadce0"/>
+    <rect width="216" height="6" rx="3" fill="#4285F4"/>
+    <circle cx="44" cy="54" r="26" fill="#e8f0fe"/>
+    <path d="M32 55 l8 8 l16 -18" fill="none" stroke="#4285F4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="80" y="50" class="f" font-size="13" fill="#5f6368">STEP 5</text>
+    <text x="80" y="70" class="f" font-size="18" font-weight="500" fill="#202124">All closed</text>
+    <text x="20" y="112" class="f" font-size="14" fill="#3c4043">Browser, IP and local</text>
+    <text x="20" y="132" class="f" font-size="14" fill="#3c4043">relay are shut down.</text>
+    <text x="20" y="152" class="f" font-size="14" fill="#3c4043">A session is never</text>
+    <text x="20" y="172" class="f" font-size="14" fill="#3c4043">moved to another IP.</text>
+  </g>
+
+  <!-- retry strip -->
+  <g transform="translate(40 344)">
+    <rect width="1120" height="64" rx="14" fill="#fce8e6"/>
+    <circle cx="34" cy="32" r="14" fill="#EA4335"/>
+    <text x="34" y="38" class="f" font-size="17" font-weight="bold" text-anchor="middle" fill="#ffffff">!</text>
+    <text x="62" y="28" class="f" font-size="16" font-weight="500" fill="#a50e0e">CAPTCHA or Google's EU consent page?</text>
+    <text x="62" y="49" class="f" font-size="14" fill="#3c4043">That IP is dropped and the search starts again at step 2, up to 4 IPs. Still blocked: the agent gets a clear error with retry_after_s, never empty results.</text>
+  </g>
+
+  <!-- meter strip -->
+  <g transform="translate(40 424)">
+    <rect width="1120" height="64" rx="14" fill="#f1f3f4"/>
+    <circle cx="34" cy="32" r="14" fill="#5f6368"/>
+    <text x="34" y="38" class="f" font-size="15" font-weight="bold" text-anchor="middle" fill="#ffffff">MB</text>
+    <text x="62" y="28" class="f" font-size="16" font-weight="500" fill="#202124">Every byte is counted</text>
+    <text x="62" y="49" class="f" font-size="14" fill="#3c4043">All traffic goes through a local relay that adds the proxy login and stops everything at your data limit, kept across restarts.</text>
+  </g>
+</svg>
