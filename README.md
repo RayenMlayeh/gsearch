@@ -33,7 +33,8 @@ proxy you already have.
 Google's official Custom Search API closes on 1 January 2027. Other search MCP servers either aren't Google's
 index (Brave, Tavily, Exa, DuckDuckGo) or charge per query (SerpApi, Bright Data).
 
-<p align="center"><img src="docs/assets/demo.svg" alt="An AI agent asks for the asyncio docs, calls google_search and answers with the real URLs" width="100%"></p>
+<p align="center"><img src="docs/assets/demo.gif" alt="A live google_search call over MCP: python 3.14 release notes, 9 results in 1.5 s, every link resolved to its real URL, plus People also ask" width="100%"></p>
+<p align="center"><sub>A real, live call on a home IP with a warm session, rendered from the recorded result; the wait shown is the measured time. <a href="docs/assets/demo.mp4">MP4</a></sub></p>
 
 ## 🚀 Quick start
 
