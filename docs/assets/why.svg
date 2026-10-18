@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="t d">
+  <title id="t">Same IP, three ways to search Google</title>
+  <desc id="d">On the same IP: a plain HTTP client gets a JavaScript wall with zero results; Playwright with Chrome was sent to a CAPTCHA two times out of two; gsearch was served 24 searches out of 24.</desc>
+  <defs>
+    <style>
+      .f { font-family: "Google Sans", "Product Sans", Roboto, "Segoe UI", Arial, sans-serif; }
+      .m { font-family: "Roboto Mono", "Cascadia Code", Consolas, monospace; }
+    </style>
+  </defs>
+  <rect x="0.5" y="0.5" width="1199" height="399" rx="20" fill="#ffffff" stroke="#dadce0"/>
+  <text x="40" y="54" class="f" font-size="26" font-weight="500" fill="#202124">Same IP, three ways to search Google</text>
+
+  <!-- plain http -->
+  <g transform="translate(40 84)">
+    <rect width="356" height="270" rx="18" fill="#ffffff" stroke="#dadce0"/>
+    <circle cx="52" cy="56" r="26" fill="#fce8e6"/>
+    <path d="M42 46 L62 66 M62 46 L42 66" stroke="#EA4335" stroke-width="4.5" stroke-linecap="round"/>
+    <text x="94" y="50" class="f" font-size="19" font-weight="500" fill="#202124">Plain HTTP</text>
+    <text x="94" y="72" class="m" font-size="13" fill="#5f6368">requests · curl · httpx</text>
+    <text x="28" y="140" class="f" font-size="34" font-weight="700" fill="#c5221f">0 results</text>
+    <text x="28" y="176" class="f" font-size="15" fill="#3c4043">Google answers with a JavaScript</text>
+    <text x="28" y="198" class="f" font-size="15" fill="#3c4043">wall: no results without a real</text>
+    <text x="28" y="220" class="f" font-size="15" fill="#3c4043">browser running it.</text>
+    <text x="28" y="250" class="f" font-size="13" fill="#5f6368">finding F-0002</text>
+  </g>
+
+  <!-- playwright chrome -->
+  <g transform="translate(422 84)">
+    <rect width="356" height="270" rx="18" fill="#ffffff" stroke="#dadce0"/>
+    <circle cx="52" cy="56" r="26" fill="#fce8e6"/>
+    <path d="M42 46 L62 66 M62 46 L42 66" stroke="#EA4335" stroke-width="4.5" stroke-linecap="round"/>
+    <text x="94" y="50" class="f" font-size="19" font-weight="500" fill="#202124">Automated Chrome</text>
+    <text x="94" y="72" class="m" font-size="13" fill="#5f6368">Playwright · headless and headed</text>
+    <text x="28" y="140" class="f" font-size="34" font-weight="700" fill="#c5221f">CAPTCHA 2/2</text>
+    <text x="28" y="176" class="f" font-size="15" fill="#3c4043">Google ran its check, then sent</text>
+    <text x="28" y="198" class="f" font-size="15" fill="#3c4043">both sessions to a reCAPTCHA</text>
+    <text x="28" y="220" class="f" font-size="15" fill="#3c4043">page instead of results.</text>
+    <text x="28" y="250" class="f" font-size="13" fill="#5f6368">finding F-0001</text>
+  </g>
+
+  <!-- gsearch -->
+  <g transform="translate(804 84)">
+    <rect width="356" height="270" rx="18" fill="#e6f4ea" stroke="#34A853" stroke-width="2"/>
+    <circle cx="52" cy="56" r="26" fill="#ffffff"/>
+    <path d="M40 57 l9 9 l17 -20" fill="none" stroke="#34A853" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="94" y="50" class="f" font-size="19" font-weight="700" fill="#202124">gsearch</text>
+    <text x="94" y="72" class="m" font-size="13" fill="#137333">Camoufox · real Firefox</text>
+    <text x="28" y="140" class="f" font-size="34" font-weight="700" fill="#137333">24/24 served</text>
+    <text x="28" y="176" class="f" font-size="15" fill="#202124">Results in all 24, with real</text>
+    <text x="28" y="198" class="f" font-size="15" fill="#202124">URLs, AI Overview and People</text>
+    <text x="28" y="220" class="f" font-size="15" fill="#202124">also ask, as clean JSON.</text>
+    <text x="28" y="250" class="f" font-size="13" fill="#5f6368">findings F-0001, F-0006, F-0011, F-0012, F-0014</text>
+  </g>
+</svg>

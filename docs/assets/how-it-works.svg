@@ -30,8 +30,8 @@
     <path d="M30 44 h28 a4 4 0 0 1 4 4 v14 a4 4 0 0 1 -4 4 h-16 l-8 7 v-7 h-4 a4 4 0 0 1 -4 -4 v-14 a4 4 0 0 1 4 -4 z" fill="#4285F4"/>
     <text x="80" y="50" class="f" font-size="13" fill="#5f6368">STEP 1</text>
     <text x="80" y="70" class="f" font-size="18" font-weight="500" fill="#202124">Agent asks</text>
-    <text x="20" y="112" class="f" font-size="14" fill="#3c4043">Claude, Cursor or any</text>
-    <text x="20" y="132" class="f" font-size="14" fill="#3c4043">MCP client calls</text>
+    <text x="20" y="112" class="f" font-size="14" fill="#3c4043">Your AI agent (any</text>
+    <text x="20" y="132" class="f" font-size="14" fill="#3c4043">MCP client) calls</text>
     <text x="20" y="160" class="m" font-size="13" fill="#1967d2">google_search(</text>
     <text x="20" y="180" class="m" font-size="13" fill="#188038">  "asyncio python")</text>
   </g>

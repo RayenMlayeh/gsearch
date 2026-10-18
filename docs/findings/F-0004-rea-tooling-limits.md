@@ -1,6 +1,6 @@
 # F-0004 What rea can and cannot do in this project
 
-- **Date:** 2026-10-16. rea MCP server, connected to Claude Code.
+- **Date:** 2026-10-16. rea MCP server, connected to an MCP client.
 
 | Observation | Label | Consequence |
 |---|---|---|

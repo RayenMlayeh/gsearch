@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="t d">
+  <title id="t">An AI agent searching Google with gsearch</title>
+  <desc id="d">A user asks an AI agent for the official asyncio docs and a good tutorial. The agent calls google_search, gets 8 results with an AI Overview, People also ask and related searches, and answers with the real URLs.</desc>
+  <defs>
+    <style>
+      .f { font-family: "Google Sans", "Product Sans", Roboto, "Segoe UI", Arial, sans-serif; }
+      .m { font-family: "Roboto Mono", "Cascadia Code", Consolas, monospace; }
+      .s1 { animation: s1 12s infinite; }
+      .s2 { animation: s2 12s infinite; }
+      .s3 { animation: s3 12s infinite; }
+      .s4 { animation: s4 12s infinite; }
+      .s5 { animation: s5 12s infinite; }
+      .d1 { animation: blink 1.2s infinite; }
+      .d2 { animation: blink 1.2s infinite 0.2s; }
+      .d3 { animation: blink 1.2s infinite 0.4s; }
+      @keyframes s1 { 0%, 3% { opacity: 0 } 7%, 93% { opacity: 1 } 98%, 100% { opacity: 0 } }
+      @keyframes s2 { 0%, 14% { opacity: 0 } 18%, 93% { opacity: 1 } 98%, 100% { opacity: 0 } }
+      @keyframes s3 { 0%, 18% { opacity: 0 } 20%, 34% { opacity: 1 } 36%, 100% { opacity: 0 } }
+      @keyframes s4 { 0%, 34% { opacity: 0 } 38%, 93% { opacity: 1 } 98%, 100% { opacity: 0 } }
+      @keyframes s5 { 0%, 46% { opacity: 0 } 52%, 93% { opacity: 1 } 98%, 100% { opacity: 0 } }
+      @keyframes blink { 0%, 100% { opacity: 0.2 } 50% { opacity: 1 } }
+    </style>
+    <filter id="shadow" x="-5%" y="-10%" width="110%" height="130%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#202124" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="1199" height="559" rx="20" fill="#f8f9fa" stroke="#dadce0"/>
+  <rect x="0.5" y="0.5" width="1199" height="52" rx="20" fill="#ffffff"/>
+  <rect x="0.5" y="32" width="1199" height="21" fill="#ffffff"/>
+  <line x1="0" y1="53" x2="1200" y2="53" stroke="#dadce0"/>
+  <circle cx="30" cy="27" r="7" fill="#EA4335"/>
+  <circle cx="52" cy="27" r="7" fill="#FBBC05"/>
+  <circle cx="74" cy="27" r="7" fill="#34A853"/>
+  <text x="600" y="33" class="f" font-size="15" text-anchor="middle" fill="#5f6368">Your AI agent  ·  gsearch connected over MCP</text>
+
+  <!-- user message -->
+  <g class="s1">
+    <rect x="610" y="78" width="550" height="56" rx="20" fill="#1a73e8"/>
+    <text x="634" y="112" class="f" font-size="17" fill="#ffffff">Find the official asyncio docs and a good tutorial.</text>
+  </g>
+
+  <!-- tool call -->
+  <g class="s2">
+    <rect x="40" y="156" width="560" height="56" rx="14" fill="#ffffff" stroke="#dadce0" filter="url(#shadow)"/>
+    <circle cx="70" cy="184" r="8" fill="none" stroke="#1a73e8" stroke-width="2.5"/>
+    <path d="M76 190 L82 196" stroke="#1a73e8" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="96" y="190" class="m" font-size="15"><tspan fill="#1967d2" font-weight="bold">google_search</tspan><tspan fill="#5f6368">(query=</tspan><tspan fill="#188038">"what is asyncio in python"</tspan><tspan fill="#5f6368">)</tspan></text>
+  </g>
+
+  <!-- searching dots -->
+  <g class="s3">
+    <circle class="d1" cx="64" cy="244" r="6" fill="#4285F4"/>
+    <circle class="d2" cx="84" cy="244" r="6" fill="#EA4335"/>
+    <circle class="d3" cx="104" cy="244" r="6" fill="#FBBC05"/>
+    <text x="122" y="250" class="f" font-size="15" fill="#5f6368">fresh IP · real Firefox · reading Google…</text>
+  </g>
+
+  <!-- tool result -->
+  <g class="s4">
+    <rect x="40" y="228" width="560" height="56" rx="14" fill="#e6f4ea"/>
+    <path d="M62 256 l7 7 l13 -15" fill="none" stroke="#34A853" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="96" y="262" class="f" font-size="16" fill="#137333"><tspan font-weight="bold">8 results</tspan> · AI Overview · 4 questions · 8 related searches</text>
+  </g>
+
+  <!-- agent answer -->
+  <g class="s5">
+    <rect x="40" y="306" width="820" height="214" rx="20" fill="#ffffff" stroke="#dadce0" filter="url(#shadow)"/>
+    <text x="66" y="346" class="f" font-size="17" fill="#202124" font-weight="500">Here is what I found:</text>
+    <text x="66" y="384" class="f" font-size="16" fill="#3c4043"><tspan font-weight="bold" fill="#202124">Official docs</tspan>: asyncio — Asynchronous I/O</text>
+    <text x="86" y="408" class="f" font-size="15" fill="#1a0dab">https://docs.python.org/3/library/asyncio.html</text>
+    <text x="66" y="446" class="f" font-size="16" fill="#3c4043"><tspan font-weight="bold" fill="#202124">Tutorial</tspan>: Python's asyncio: A Hands-On Walkthrough (Real Python)</text>
+    <text x="66" y="484" class="f" font-size="16" fill="#3c4043"><tspan font-weight="bold" fill="#202124">People also ask</tspan>: "Is asyncio better than threading?"</text>
+  </g>
+
+  <!-- side stats -->
+  <g transform="translate(890 306)" class="s5">
+    <rect width="270" height="214" rx="20" fill="#ffffff" stroke="#dadce0"/>
+    <text x="24" y="40" class="f" font-size="14" fill="#5f6368">every link</text>
+    <text x="24" y="70" class="f" font-size="26" font-weight="700" fill="#1967d2">real URLs</text>
+    <text x="24" y="110" class="f" font-size="14" fill="#5f6368">every block</text>
+    <text x="24" y="140" class="f" font-size="26" font-weight="700" fill="#c5221f">clear errors</text>
+    <text x="24" y="180" class="f" font-size="14" fill="#5f6368">every string flagged</text>
+    <text x="24" y="204" class="f" font-size="16" font-weight="700" fill="#137333">untrusted_content</text>
+  </g>
+</svg>

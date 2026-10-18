@@ -3,120 +3,92 @@
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4285F4" alt="MIT license"></a>
-  <img src="https://img.shields.io/badge/python-3.12%2B-34A853" alt="Python 3.12+">
-  <img src="https://img.shields.io/badge/MCP-stdio-EA4335" alt="MCP server over stdio">
-  <img src="https://img.shields.io/badge/proxies-any%20format-FBBC05" alt="Any proxy format">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-4285F4?style=for-the-badge" alt="MIT license"></a>
+  <img src="https://img.shields.io/badge/python-3.12%2B-34A853?style=for-the-badge" alt="Python 3.12+">
+  <img src="https://img.shields.io/badge/MCP-ready-EA4335?style=for-the-badge" alt="MCP ready">
+  <img src="https://img.shields.io/badge/proxies-any%20format-FBBC05?style=for-the-badge" alt="Any proxy format">
 </p>
+
+<p align="center">
+  <b><a href="#-quick-start">Quick start</a></b> ·
+  <b><a href="#-what-your-agent-gets">What you get</a></b> ·
+  <b><a href="#-how-it-works">How it works</a></b> ·
+  <b><a href="#-proxies">Proxies</a></b> ·
+  <b><a href="#-performance">Performance</a></b> ·
+  <b><a href="#-faq">FAQ</a></b>
+</p>
+
+<h3 align="center">Give your AI agent real Google Search, with real results and real URLs, in clean JSON.</h3>
+
+<p align="center"><img src="docs/assets/demo.svg" alt="An AI agent asks for the asyncio docs, calls google_search and answers with the real URLs" width="100%"></p>
 
 <p align="center"><img src="docs/assets/results.svg" alt="Results: 24 of 24 searches served with 0 CAPTCHAs, 1.2 s per search, 0.6 MB per search, every link resolved to its real URL" width="100%"></p>
 
 <p align="center"><sub>
 Measured on clean IPs:
-served and speed: <a href="docs/findings/F-0014-eh1-hybrid-session-reuse.md">F-0014</a>,
+<a href="docs/findings/F-0014-eh1-hybrid-session-reuse.md">F-0014</a>,
 <a href="docs/findings/F-0006-fixture-provenance-and-serp-anatomy.md">F-0006</a>,
 <a href="docs/findings/F-0011-goto-resolution-leak-and-fix.md">F-0011</a>,
 <a href="docs/findings/F-0012-headless-vs-headed-fingerprint.md">F-0012</a>,
-<a href="docs/findings/F-0001-cold-start-chrome-vs-camoufox.md">F-0001</a> ·
-14 s and 0.6 MB on a clean proxy IP: <a href="docs/findings/F-0015-b1-residential-proxy-benchmark.md">F-0015</a> ·
-full numbers, including flagged pools, in <a href="#performance">Performance</a>.
+<a href="docs/findings/F-0001-cold-start-chrome-vs-camoufox.md">F-0001</a>;
+14 s and 0.6 MB on a clean proxy IP: <a href="docs/findings/F-0015-b1-residential-proxy-benchmark.md">F-0015</a>.
+Flagged proxy pools are slower: see <a href="#-performance">Performance</a>.
 </sub></p>
 
-**gsearch gives your AI agent Google Search.** It runs real searches in a real Firefox (Camoufox) through
-your proxies. Each results page comes back as clean JSON: organic results with their **real destination
-URLs**, the AI Overview, People Also Ask, related searches, ads and pagination. Use it as an **MCP server**
-(Claude Code, Claude Desktop, Cursor and any other MCP client), from the **command line**, or from
-**Python**.
+## ✨ Why gsearch
 
-There is almost nothing to configure. Give it a proxy, or none at all, and it uses the setup that worked
-best in testing. When Google pushes back with a CAPTCHA, a consent page or a layout change, your agent gets
-a clear error with `retry_after_s`. It never gets silently wrong data.
+<p align="center"><img src="docs/assets/why.svg" alt="Same IP: plain HTTP gets 0 results, automated Chrome gets a CAPTCHA 2 of 2 times, gsearch is served 24 of 24" width="100%"></p>
 
-> [!IMPORTANT]
-> Automated access to Google Search may breach Google's Terms of Service, and there is active litigation in
-> this area. Read [Legal and responsible use](#legal-and-responsible-use) before running live searches.
+Google is hard to search from code. Plain HTTP clients get a JavaScript wall, automated Chrome gets CAPTCHAs,
+and Google's official search API is closed to new customers and shuts down on 1 January 2027
+([F-0005](docs/findings/F-0005-custom-search-api-sunset.md)). gsearch solves that for AI agents:
 
-## What your agent gets
+- 🦊 **A real browser, not a scraper.** Camoufox, a hardened Firefox, runs Google's page as it is, with a
+  real-device fingerprint and a locale that matches its IP.
+- 🔗 **Real URLs.** Google hides result links behind `/goto` redirects. gsearch resolves every one to the
+  page it points to, without loading that page.
+- 🤖 **Built for agents.** One MCP server, two tools, typed JSON. Blocks come back as clear errors with
+  `retry_after_s`, never as empty results, and every string is flagged as untrusted web content.
+- 🌍 **Any proxy, any format.** Rotating residential, static VPS or datacenter lists, HTTP, HTTPS or SOCKS5,
+  in any common layout. Every byte is counted, with a hard data limit.
+- 🎯 **Nothing to tune.** Two settings. Everything else is fixed to what worked best in testing.
+- 📊 **Honest numbers.** Every claim in this README links to a write-up of how it was measured.
 
-<p align="center"><img src="docs/assets/what-you-get.svg" alt="Each part of a Google results page and the JSON field it becomes" width="100%"></p>
-
-| Field | What it holds |
-|---|---|
-| `organic[].url` | The real destination of each result. Google serves opaque `/goto?url=…` redirects; gsearch resolves every one in the same session, without loading the page. |
-| `organic[].title`, `snippet`, `date`, `domain`, `display_url` | What the result shows, as text. `link` keeps the exact link Google served. |
-| `organic[].sitelinks`, `source_meta` | A result's sub-links, and what Google shows instead of a URL on forum and video results (`2 years ago`). |
-| `ai_overview` | The AI Overview text and its sources, when Google shows one. |
-| `people_also_ask`, `related_searches` | The questions and related queries on the page. |
-| `ads` | Text ads, when the market serves them. |
-| `pagination` | Current page and next page. Ask for more results with `page`. |
-| `meta.untrusted_content` | Always `true`: every string is third-party web text (see [prompt injection](#prompt-injection)). |
-
-The full JSON Schema is in [`serp.schema.json`](packages/gsearch-parse/src/gsearch_parse/serp.schema.json).
-Here is real output from a saved results page (offline demo mode, where `url` stays `null`; a live search
-fills it):
-
-<p align="center"><img src="docs/assets/search.svg" alt="gsearch search output" width="820"></p>
-
-A block is never an empty result. It comes back as an error that says what happened, how long to wait and
-what to do:
-
-<p align="center"><img src="docs/assets/captcha.svg" alt="A CAPTCHA returned as a structured error" width="820"></p>
-
-## Quick start
-
-You need Python 3.12+ and about 1 GB of disk for the browser.
-
-**1. Install**
+## 🚀 Quick start
 
 ```bash
-git clone https://github.com/RayenMlayeh/gsearch.git
-cd gsearch
-python -m venv .venv
-source .venv/bin/activate          # Windows (PowerShell): .venv\Scripts\Activate.ps1
+git clone https://github.com/RayenMlayeh/gsearch.git && cd gsearch
+python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\Activate.ps1
 pip install -e packages/gsearch-parse -e "packages/gsearch-core[live]" -e packages/gsearch-cli -e packages/gsearch-mcp
-python -m camoufox fetch           # downloads the browser once
+python -m camoufox fetch                              # downloads the browser once (~1 GB)
 ```
 
-Check that it works, offline (the answer comes from a saved page):
+Try it right away, offline, on a saved results page:
 
 ```bash
 gsearch search "what is asyncio in python" --fixtures fixtures/gecko
 ```
 
-**2. Add your proxy** (optional, but needed for volume)
+Add your proxy (optional; without one, gsearch uses your own IP, at most 20 searches an hour):
 
 ```bash
-cp .env.example .env
+cp .env.example .env     # then set GSEARCH_PROXY and GSEARCH_DATA_LIMIT_MB
 ```
 
-```ini
-GSEARCH_PROXY=user-country-us-sid-{sid}:password@gate.example.com:7000
-GSEARCH_DATA_LIMIT_MB=1000
-```
-
-Those are the only two settings most people need. The proxy can be in [any format](#proxies). The data
-limit stops all proxy traffic once that many MB have been used, counted across restarts.
-
-**3. Connect your agent**
-
-The server is one command, `gsearch-mcp`. MCP clients start it in their own folder, so tell it where your
-`.env` is with `GSEARCH_ENV_FILE`. Use absolute paths. On Windows the command is
-`C:\path\to\gsearch\.venv\Scripts\gsearch-mcp.exe`; on macOS and Linux it is
-`/path/to/gsearch/.venv/bin/gsearch-mcp`.
-
-<details open>
-<summary><b>Claude Code</b></summary>
+Connect your agent. MCP clients start the server in their own folder, so point `GSEARCH_ENV_FILE` at your
+`.env` with an absolute path:
 
 ```bash
-claude mcp add gsearch --scope user \
-  -e GSEARCH_ENV_FILE=/path/to/gsearch/.env \
-  -- /path/to/gsearch/.venv/bin/gsearch-mcp
+claude mcp add gsearch --scope user -e GSEARCH_ENV_FILE=/path/to/gsearch/.env -- /path/to/gsearch/.venv/bin/gsearch-mcp
 ```
-
-</details>
 
 <details>
-<summary><b>Claude Desktop</b> (<code>claude_desktop_config.json</code>)</summary>
+<summary><b>Claude Desktop, Cursor and others</b></summary>
+
+On Windows the command is `C:\path\to\gsearch\.venv\Scripts\gsearch-mcp.exe`; on macOS and Linux it is
+`/path/to/gsearch/.venv/bin/gsearch-mcp`.
+
+**Claude Desktop** (`claude_desktop_config.json`):
 
 ```json
 {
@@ -129,10 +101,7 @@ claude mcp add gsearch --scope user \
 }
 ```
 
-</details>
-
-<details>
-<summary><b>Cursor</b> (<code>~/.cursor/mcp.json</code>, or <code>.cursor/mcp.json</code> in a project)</summary>
+**Cursor** (`~/.cursor/mcp.json`, or `.cursor/mcp.json` in a project) and any other MCP client:
 
 ```json
 {
@@ -145,126 +114,122 @@ claude mcp add gsearch --scope user \
 }
 ```
 
-</details>
-
-<details>
-<summary><b>Offline demo</b> (saved pages, no Google traffic)</summary>
+**Offline demo** (saved pages, no Google traffic; answers only the saved queries in
+`fixtures/gecko/index.json`, such as `what is asyncio in python`):
 
 ```bash
 claude mcp add gsearch-demo -e GSEARCH_FIXTURES_DIR=/path/to/gsearch/fixtures/gecko -- /path/to/gsearch/.venv/bin/gsearch-mcp
 ```
 
-It answers only the saved queries in `fixtures/gecko/index.json`, such as `what is asyncio in python`.
+</details>
+
+Then just ask: *"Search Google for what asyncio is and give me the top three links"*, *"What do people also
+ask about asyncio?"*, *"Find asyncio pages on python.org from the past year."*
+
+> [!NOTE]
+> Automated access to Google Search may breach Google's Terms of Service. Read
+> [Legal and responsible use](#-legal-and-responsible-use) before running live searches.
+
+## 📦 What your agent gets
+
+<p align="center"><img src="docs/assets/what-you-get.svg" alt="Each part of a Google results page and the JSON field it becomes" width="100%"></p>
+
+Real output from a saved results page (offline demo mode, where `url` stays `null`; a live search fills it):
+
+<p align="center"><img src="docs/assets/search.svg" alt="gsearch search output" width="820"></p>
+
+A block is never an empty list. It comes back as an error that says what happened and how long to wait:
+
+<p align="center"><img src="docs/assets/captcha.svg" alt="A CAPTCHA returned as a structured error" width="820"></p>
+
+<details>
+<summary><b>Every field explained</b></summary>
+
+| Field | What it holds |
+|---|---|
+| `organic[].url` | The real destination of each result, resolved from Google's `/goto` redirect in the same session. |
+| `organic[].title`, `snippet`, `date`, `domain`, `display_url` | What the result shows, as text. `link` keeps the exact link Google served. |
+| `organic[].sitelinks`, `source_meta` | A result's sub-links, and what Google shows instead of a URL on forum and video results (`2 years ago`). |
+| `ai_overview` | The AI Overview text and its sources, when Google shows one. |
+| `people_also_ask`, `related_searches` | The questions and related queries on the page. |
+| `ads` | Text ads, when the market serves them. |
+| `pagination` | Current page and next page. Ask for more results with `page`. |
+| `meta.untrusted_content` | Always `true`: every string is third-party web text (see [prompt injection](#prompt-injection)). |
+
+Error codes: `captcha`, `soft_block`, `hard_block`, `consent_wall`, `js_gate`, `rate_limited`,
+`parse_drift`, `network`, `proxy`, `backend_unavailable`, `invalid_request`. The full JSON Schema is in
+[`serp.schema.json`](packages/gsearch-parse/src/gsearch_parse/serp.schema.json).
 
 </details>
 
-Then ask your agent something like:
-
-> *"Search Google for what asyncio is in Python and summarise the top three results with their links."*<br>
-> *"What do people also ask about asyncio?"*<br>
-> *"Find asyncio pages on python.org from the past year."*<br>
-> *"How much proxy data has gsearch used?"*
-
-## How it works
+## 🔍 How it works
 
 <p align="center"><img src="docs/assets/how-it-works.svg" alt="One search: agent asks, fresh IP, real Firefox, clean JSON, all closed" width="100%"></p>
 
-- **A real browser.** Google only shows results after a JavaScript check. On the same IP, a
-  Playwright-driven Chrome was sent to a CAPTCHA while Camoufox was served
-  ([F-0001](docs/findings/F-0001-cold-start-chrome-vs-camoufox.md)). gsearch never forges or alters Google's
-  tokens: the browser runs the page as it is.
-- **Like a person.** A real-device fingerprint. Locale and location that match the IP. A visible window,
-  because on proxy IPs headless sessions were challenged far more often
+- **Like a person.** A visible window, because headless sessions were challenged far more often on proxy IPs
   ([F-0015](docs/findings/F-0015-b1-residential-proxy-benchmark.md)). The query is typed into the address
   bar. WebRTC is off, so your own IP can't leak around the proxy.
-- **Real URLs, cheaply.** Result links are resolved from Google's own redirects, on the same IP with the same
-  cookies and a TLS fingerprint matching the browser's. Destination pages are never loaded
-  ([F-0011](docs/findings/F-0011-goto-resolution-leak-and-fix.md),
+- **Never forged.** gsearch never generates or alters Google's tokens: the browser runs the page as it is.
+- **Cheap links.** Links are resolved on the same IP with the same cookies and a TLS fingerprint matching the
+  browser's ([F-0011](docs/findings/F-0011-goto-resolution-leak-and-fix.md),
   [F-0013](docs/findings/F-0013-tls-camoufox-vs-curl-cffi.md)).
-- **On a server.** On a Linux machine with no screen, the browser runs on a virtual display automatically.
-  Install Xvfb (`sudo apt install xvfb`).
+- **Runs on servers.** On a Linux machine without a screen, the browser uses a virtual display
+  automatically (`sudo apt install xvfb`).
 
-The design and its trade-offs are in [docs/DESIGN.md](docs/DESIGN.md). Every claim about Google's behaviour
-is backed by a write-up in [docs/findings/](docs/findings/README.md).
-
-## Proxies
+## 🌍 Proxies
 
 <p align="center"><img src="docs/assets/proxies.svg" alt="Rotating residential, static or VPS proxies, or no proxy; any format" width="100%"></p>
 
-Put one proxy, several, or the path of a file in `GSEARCH_PROXY`:
-
 ```ini
-# rotating residential: {sid}, or the provider's own sid-…, session-…, sessid-… part, gives a new IP per search
+# rotating residential: {sid}, or your provider's sid-…, session-…, sessid-… part, gives a new IP per search
 GSEARCH_PROXY=gate.example.com:7000:user-country-us-sid-{sid}:password
 
 # static proxies (VPS, datacenter, ISP): one or many, separated by commas, spaces or new lines
 GSEARCH_PROXY=socks5://user:password@203.0.113.10:1080, http://203.0.113.11:3128
 
-# or a file with one proxy per line (# comments allowed)
+# or a file with one proxy per line
 GSEARCH_PROXY=/path/to/proxies.txt
 ```
 
-| Accepted | Examples |
-|---|---|
-| Layouts | `host:port` · `host:port:user:pass` · `user:pass@host:port` · `user:pass:host:port` |
-| Types | `http://` (the default) · `https://` · `socks5://` · `socks5h://` |
-| Country check | `country-xx` or `cc-xx` in the login: exits elsewhere are dropped before the browser starts. |
+- **Rotating:** a new IP and a new browser for every search, up to 3 at once. A blocked IP is replaced, up to
+  4 IPs per search. `country-xx` or `cc-xx` in the login is checked, and exits elsewhere are dropped.
+- **Static:** each IP keeps one warm session, and the IPs take turns. Each IP has its own budget (20 searches
+  an hour, 150 a day) and rests until midnight after a CAPTCHA, so ten IPs allow up to about 200 searches an
+  hour.
+- **Data:** every byte goes through a local relay that counts it, and `GSEARCH_DATA_LIMIT_MB` stops
+  everything at your limit, across restarts.
 
-- **Rotating:** a new IP and a new browser for every search, up to 3 at once. A blocked IP is replaced, up
-  to 4 IPs per search.
-- **Static:** each IP keeps one warm session, and the IPs take turns. Each has its own budget (20 searches
-  an hour, 150 a day), and an IP that meets a CAPTCHA rests until midnight. Ten static IPs allow up to about 200
-  searches an hour.
-- **Data:** every byte goes through a local relay that counts it, which is what residential providers bill.
-  `GSEARCH_DATA_LIMIT_MB` is a hard stop that holds across restarts.
-
-> [!NOTE]
+> [!TIP]
 > Check your proxy provider's acceptable-use policy. Many forbid using their network on sites whose terms
 > prohibit automated access, and forbid solving CAPTCHAs.
 
-## Performance
+## 📊 Performance
 
 **Proxy quality decides speed and cost.** Many residential IPs are already flagged by Google. Each flagged
-one costs a browser launch (about 0.7–1 MB and 20 s) before the next IP is tried.
+IP costs a browser launch (about 0.7–1 MB and 20 s) before the next one is tried.
 
-### Expected with a high-quality rotating residential proxy
-
-These are **expected** figures, built from measurements on clean IPs. They assume that **at least ~85% of
-fresh IPs are served by Google**.
-
-| | Expected | Measured basis |
+| | Expected with a high-quality rotating proxy | Measured on a low-quality pool ([F-0015](docs/findings/F-0015-b1-residential-proxy-benchmark.md)) |
 |---|---|---|
-| Time per search, links resolved | ~15–20 s | 14 s on a clean IP, all links resolved |
-| Proxy data per search | ~0.6–1 MB | 0.6 MB on a clean IP |
-| Throughput (3 browsers at once) | ~500–600 searches an hour | the time above, 3 at once |
-| 1,000 searches | ~0.6–1 GB, under 2 hours | the two rows above |
-| No proxy (warm session on your own IP) | ~1.2 s per search | 4 of 4 served ([F-0014](docs/findings/F-0014-eh1-hybrid-session-reuse.md)); limited to 20 an hour |
+| Fresh IPs served by Google | ~85% or more (assumed) | 1 in 3 to 1 in 5 |
+| Time per search | ~15–20 s (14 s measured on a clean IP) | 40–75 s |
+| Proxy data per search | ~0.6–1 MB (0.6 MB measured on a clean IP) | 4.7–6.3 MB |
+| Searches per hour (3 browsers) | ~500–600 | ~72 |
+| 1,000 searches | ~0.6–1 GB, under 2 hours | ~5–6.5 GB, ~14 hours |
 
-### Measured on a low-quality pool
+Without a proxy, a warm session on your own IP takes **~1.2 s per search**, with every link resolved and 0
+CAPTCHAs in testing ([F-0014](docs/findings/F-0014-eh1-hybrid-session-reuse.md)), capped at 20 searches an
+hour to protect your IP. Static proxies have not been benchmarked yet.
 
-One evening on one provider's US residential pool, where most IPs were already flagged
-([F-0015](docs/findings/F-0015-b1-residential-proxy-benchmark.md)):
-
-| | Measured |
-|---|---|
-| Fresh IPs served by Google | 1 in 3 to 1 in 5 |
-| Proxy data per search (failed IPs included) | 4.7–6.3 MB |
-| Time per search (retries included) | 40–75 s |
-| Throughput (3 browsers at once) | ~72 searches an hour |
-| Result links resolved | all of them |
-
-Static proxies have not been benchmarked yet.
-
-### Measure your own proxy
+**Measure your own proxy** within your data limit:
 
 ```bash
 python tools/benchmark.py -n 10
 ```
 
-The benchmark runs ten searches the way the MCP server does, within your data limit. It then reports
-searches served, IPs used, MB and seconds per search, and links resolved.
+## 🛠 Reference
 
-## Settings
+<details>
+<summary><b>Settings</b> (five in total; most people need the first two)</summary>
 
 | Setting | What it does |
 |---|---|
@@ -274,20 +239,19 @@ searches served, IPs used, MB and seconds per search, and links resolved.
 | `GSEARCH_FIXTURES_DIR` | Answer from saved pages instead of Google (demos and tests). |
 | `GSEARCH_STATE_DIR` | Where budgets, the data meter and saved block pages live. Default: `%LOCALAPPDATA%\gsearch` or `~/.local/share/gsearch`. |
 
-Everything else is fixed to what worked best in testing: one-shot rotation, a visible browser, address-bar
-search, real-device fingerprints, 4 attempts per search, always resolving URLs, and a 10-minute cache for
-repeated queries.
+Everything else is fixed to what worked best in testing: a new IP per search with rotating proxies, a
+visible browser, address-bar search, real-device fingerprints, 4 attempts per search, always resolving URLs,
+and a 10-minute cache for repeated queries.
 
-## Tools, CLI and Python
+</details>
 
-**MCP tools**
+<details>
+<summary><b>MCP tools, CLI and Python</b></summary>
 
-| Tool | Arguments | Returns |
+| MCP tool | Arguments | Returns |
 |---|---|---|
-| `google_search` | `query`, and optionally `page` (1–50), `lang` (`en`, `fr`, …), `country` (`us`, …), `time_range` (`h`, `d`, `w`, `m`, `y`), `site` (a domain) | The JSON above, plus a short text summary. An error result on a block. |
-| `google_search_status` | none | Proxy data used against the limit, IPs used and blocked, cache. Never contacts Google. |
-
-**CLI**
+| `google_search` | `query`, and optionally `page` (1–50), `lang` (`en`, `fr`, …), `country` (`us`, …), `time_range` (`h`, `d`, `w`, `m`, `y`), `site` (a domain) | The JSON above plus a short text summary, or an error result on a block. |
+| `google_search_status` | none | Proxy data used against the limit, IPs used and blocked, and the cache. Never contacts Google. |
 
 ```text
 gsearch search "query" [--page N] [--lang xx] [--country xx] [--time-range h|d|w|m|y] [--site domain]
@@ -299,8 +263,6 @@ gsearch identity check                               check the browser's fingerp
 
 Exit codes: `0` results, `2` usage or settings error, `3` blocked or other error, `4` Google changed its
 layout.
-
-**Python**
 
 ```python
 import asyncio
@@ -317,7 +279,10 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-## Troubleshooting
+</details>
+
+<details>
+<summary><b>Troubleshooting</b></summary>
 
 | You see | What it means | What to do |
 |---|---|---|
@@ -333,7 +298,29 @@ asyncio.run(main())
 When the browser hits a block or an error, the page is saved with a screenshot in the state folder's
 `evidence/`, and the error's `evidence_ref` points to it.
 
-## Legal and responsible use
+</details>
+
+## ❓ FAQ
+
+**Do I need a proxy?** No. Without one, gsearch uses your own IP with a warm session (~1.2 s per search),
+capped at 20 searches an hour and 150 a day to keep your IP clean. For volume, use a proxy.
+
+**Which proxy should I buy?** A rotating residential proxy with sticky sessions (a session id in the
+username). Quality matters more than price: run `tools/benchmark.py` on a small plan before buying more.
+
+**How much proxy data does a search use?** About 0.6 MB on a clean IP. Flagged IPs cost more, because each
+one is a wasted browser launch. Set `GSEARCH_DATA_LIMIT_MB` so you can never overspend.
+
+**Does it solve CAPTCHAs?** No. A blocked IP is dropped and a fresh one is tried. gsearch ships no CAPTCHA
+solver and never forges Google's tokens.
+
+**Can it run on a server?** Yes. On Linux without a screen, install Xvfb and the browser runs on a virtual
+display.
+
+**Which agents work with it?** Any MCP client: Claude Code, Claude Desktop, Cursor and others. You can also
+use the CLI or call it from Python.
+
+## 📜 Legal and responsible use
 
 - **Google's Terms of Service restrict automated access to Google Search.** Running this tool against Google
   may breach those terms, whatever this project's license says.
@@ -349,8 +336,6 @@ When the browser hits a block or an error, the page is saved with a screenshot i
   Google.
 - **No personal-data harvesting.** Don't profile people, scrape people-search results or collect personal
   data at scale. Keep caches short-lived and don't republish raw results.
-- **Prefer licensed data where it exists.** Google's Custom Search JSON API is closed to new customers and ends
-  on 2027-01-01 ([F-0005](docs/findings/F-0005-custom-search-api-sunset.md)).
 - **On a block, back off.** CAPTCHAs and rate limits come back as errors with `retry_after_s`. gsearch never
   tries to defeat the challenge.
 
@@ -361,10 +346,15 @@ may contain instructions aimed at your agent. The tool descriptions say so, ever
 `meta.untrusted_content: true` and an MCP `untrusted_content` flag, and the text summary ends with a
 warning. Treat results strictly as data.
 
-## Contributing
+## 🤝 Contributing
 
 Tests never contact Google: the parser is tested against saved pages, and the browser against a local fake
-Google. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Google. Pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and
+[docs/DESIGN.md](docs/DESIGN.md).
+
+<p align="center">
+  <b>If gsearch saves you time, a ⭐ helps other people find it.</b>
+</p>
 
 ## License
 
