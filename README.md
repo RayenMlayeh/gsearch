@@ -9,6 +9,19 @@
   <img src="https://img.shields.io/badge/proxies-any%20format-FBBC05" alt="Any proxy format">
 </p>
 
+<p align="center"><img src="docs/assets/results.svg" alt="Results: 24 of 24 searches served with 0 CAPTCHAs, 1.2 s per search, 0.6 MB per search, every link resolved to its real URL" width="100%"></p>
+
+<p align="center"><sub>
+Measured on clean IPs:
+served and speed: <a href="docs/findings/F-0014-eh1-hybrid-session-reuse.md">F-0014</a>,
+<a href="docs/findings/F-0006-fixture-provenance-and-serp-anatomy.md">F-0006</a>,
+<a href="docs/findings/F-0011-goto-resolution-leak-and-fix.md">F-0011</a>,
+<a href="docs/findings/F-0012-headless-vs-headed-fingerprint.md">F-0012</a>,
+<a href="docs/findings/F-0001-cold-start-chrome-vs-camoufox.md">F-0001</a> ·
+14 s and 0.6 MB on a clean proxy IP: <a href="docs/findings/F-0015-b1-residential-proxy-benchmark.md">F-0015</a> ·
+full numbers, including flagged pools, in <a href="#performance">Performance</a>.
+</sub></p>
+
 **gsearch gives your AI agent Google Search.** It runs real searches in a real Firefox (Camoufox) through
 your proxies. Each results page comes back as clean JSON: organic results with their **real destination
 URLs**, the AI Overview, People Also Ask, related searches, ads and pagination. Use it as an **MCP server**
