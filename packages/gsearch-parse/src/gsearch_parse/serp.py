@@ -101,6 +101,7 @@ def parse_page(
         people_also_ask=extract.extract_paa(tree, s),
         related_searches=extract.extract_related(tree, s),
         pagination=extract.extract_pagination(tree, s, page),
+        answer_boxes=extract.extract_answer_boxes(tree, s),
     )
 
     problems = check_invariants(data)

@@ -172,6 +172,35 @@
           "title": "Ad",
           "type": "object"
         },
+        "AnswerBox": {
+          "additionalProperties": false,
+          "properties": {
+            "links": {
+              "description": "First links of the box.",
+              "items": {
+                "$ref": "#/$defs/Link"
+              },
+              "title": "Links",
+              "type": "array"
+            },
+            "text": {
+              "description": "Visible text of the box, e.g. teams and kickoff time, or headlines.",
+              "title": "Text",
+              "type": "string"
+            },
+            "title": {
+              "description": "Box heading as Google shows it, e.g. 'Top stories' (in the page language).",
+              "title": "Title",
+              "type": "string"
+            }
+          },
+          "required": [
+            "title",
+            "text"
+          ],
+          "title": "AnswerBox",
+          "type": "object"
+        },
         "FeaturedSnippet": {
           "additionalProperties": false,
           "properties": {
@@ -600,6 +629,14 @@
               "type": "null"
             }
           ]
+        },
+        "answer_boxes": {
+          "description": "Google's other boxes (sports results, top stories, videos...): often the freshest answer for news, sports and events.",
+          "items": {
+            "$ref": "#/$defs/AnswerBox"
+          },
+          "title": "Answer Boxes",
+          "type": "array"
         },
         "featured_snippet": {
           "anyOf": [

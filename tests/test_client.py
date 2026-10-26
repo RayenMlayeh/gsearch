@@ -80,3 +80,17 @@ def test_request_validation() -> None:
         SearchRequest(query="x", num=20)  # type: ignore[arg-type]
     with pytest.raises(ValidationError, match="should match pattern"):
         SearchRequest(query="x", country="USA")
+
+
+class _ResolvingFixtures(FixtureFetcher):
+    async def resolve_links(self, links: list[str]) -> dict[str, str | None]:
+        return {link: f"https://news.example/{i}" for i, link in enumerate(links)}
+
+
+async def test_answer_box_links_are_resolved_like_results() -> None:
+    resp = await SearchClient(_ResolvingFixtures(GECKO)).search(SearchRequest(query="nobel prize 2026"))
+    assert isinstance(resp, SearchResponse)
+    stories = resp.answer_boxes[0]
+    assert stories.title == "Top stories"
+    assert all(str(x.url).startswith("https://news.example/") for x in stories.links)
+    assert all(r.url is not None for r in resp.organic)

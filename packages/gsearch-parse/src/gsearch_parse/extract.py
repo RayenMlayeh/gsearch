@@ -7,7 +7,7 @@ from urllib.parse import parse_qs, urljoin, urlsplit
 
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-from .models import Ad, AIOverview, Link, OrganicResult, Pagination, PeopleAlsoAsk
+from .models import Ad, AIOverview, AnswerBox, Link, OrganicResult, Pagination, PeopleAlsoAsk
 from .selectors import SelectorSet
 
 GOOGLE_ORIGIN = "https://www.google.com"
@@ -17,6 +17,8 @@ _BREADCRUMB_SEP = chr(0x203A)  # single right-pointing angle quotation mark
 _GOOGLE_HOST = re.compile(r"(^|\.)google\.[a-z.]{2,6}$")
 # Date prefix before a snippet: "Jul 30, 2025 <sep> text", sep = em dash, middle dot or en dash.
 _DATE_SEPS = chr(0x2014) + chr(0x00B7) + chr(0x2013)
+BOX_TEXT_CHARS = 2_000
+BOX_LINKS = 5
 _DATE_PREFIX = re.compile(rf"^(?P<date>[^{_DATE_SEPS}]{{3,40}}?)\s*[{_DATE_SEPS}]\s+(?P<rest>.+)$", re.S)
 
 
@@ -81,7 +83,7 @@ def _breadcrumb(cite_text: str) -> tuple[str | None, str | None, str | None]:
 def _is_destination_link(link: str) -> bool:
     parts = urlsplit(link)
     if not _is_search_host(parts.hostname or ""):
-        return not (parts.hostname or "").startswith("support.google.")
+        return not (parts.hostname or "").startswith(("support.google.", "accounts.google."))
     return parts.path in ("/goto", "/url")
 
 
@@ -216,3 +218,34 @@ def extract_pagination(tree: LexborHTMLParser, s: SelectorSet, current: int) -> 
         return None
     pages.add(current)
     return Pagination(current=current, next_page=current + 1 if has_next else None, pages=sorted(pages))
+
+
+def extract_answer_boxes(tree: LexborHTMLParser, s: SelectorSet) -> list[AnswerBox]:
+    container = tree.css_first(s.organic_container)
+    boxes: list[AnswerBox] = []
+    for block in container.iter() if container is not None else []:
+        heading = block.css_first(s.box_heading)
+        organic = any(UI_CHROME_ATTR not in h.attributes for h in block.css(s.title))
+        if heading is None or organic or block.css_first(f"{s.paa_question}, #m-x-content") is not None:
+            continue
+        titles: dict[str, str] = {}
+        for a in block.css("a[href]"):
+            link = absolute_link(a.attributes.get("href"))
+            if not link or not _is_destination_link(link):
+                a.decompose()
+                continue
+            if item := text_of(a.css_first(s.box_item)):
+                titles[link] = item
+            elif link not in titles:
+                titles[link] = text_of(a)
+        links = [Link(title=t, link=link, url=destination(link)) for link, t in titles.items() if t]
+        if not links and block.css_first(s.box_item) is None:
+            continue
+        title = text_of(heading)
+        heading.decompose()
+        for hidden in block.css('[style*="display:none"], [aria-hidden="true"], [hidden]'):
+            hidden.decompose()
+        text = text_of(block)[:BOX_TEXT_CHARS]
+        if title and text:
+            boxes.append(AnswerBox(title=title, text=text, links=links[:BOX_LINKS]))
+    return boxes

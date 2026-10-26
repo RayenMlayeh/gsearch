@@ -36,7 +36,9 @@ def test_golden(fx: Fixture) -> None:
     assert actual == expected
 
 
-@pytest.mark.parametrize("fx", [f for f in REAL if f.id != "c6-no-results"], ids=lambda f: f.id)
+@pytest.mark.parametrize(
+    "fx", [f for f in REAL if f.id not in ("c6-no-results", "c9-sports-top-stories")], ids=lambda f: f.id
+)
 def test_every_results_page_has_sane_organic_results(fx: Fixture) -> None:
     result = parse(fx)
     assert result.state is PageState.OK, result.reason
@@ -131,3 +133,25 @@ def test_commercial_query_without_ads_returns_empty_ads() -> None:
     # Ad extraction stays unverified until a capture without uBO shows ads.
     data = parse(fixture_by_id("c4-commercial-no-ads")).data
     assert data is not None and data.ads == []
+
+
+def test_sports_box_and_top_stories_are_answer_boxes() -> None:
+    data = parse(fixture_by_id("c9-sports-top-stories")).data
+    assert data is not None
+    assert [r.position for r in data.organic] == [1, 2, 3, 4, 5, 6]
+    sports, stories, videos, shorts = data.answer_boxes
+    assert sports.title == "النتائج الرياضية"
+    assert "8:30" in sports.text and "حدث خطأ" not in sports.text
+    assert stories.title == "أهم الأخبار"
+    assert stories.links[0].title.endswith("Lyon : où regarder en direct le match de Ligue 1 ?")
+    assert stories.text.startswith("TV-Programme.com")
+    assert len(stories.links) == 5 and all("accounts.google" not in str(x.link) for x in stories.links)
+    assert shorts.links[0].title.startswith("En raison de l'acte 2 des manifestations")
+    assert videos.links
+
+
+def test_english_top_stories() -> None:
+    data = parse(fixture_by_id("c8-news")).data
+    assert data is not None
+    assert [b.title for b in data.answer_boxes] == ["Top stories", "Short videos"]
+    assert data.answer_boxes[0].links[0].title.startswith("“You have to be willing to take risks”")

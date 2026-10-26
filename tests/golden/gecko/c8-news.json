@@ -129,6 +129,65 @@
         9,
         10
       ]
-    }
+    },
+    "answer_boxes": [
+      {
+        "title": "Top stories",
+        "text": "The Lancet “You have to be willing to take risks”: the 2026 Nobel prizes 21 hours ago Britannica 2026 Nobel Prize winners | List, Physiology, Medicine, Physics, Chemistry, Literature, Economics, & Facts 3 days ago NobelPrize.org Prize in Economic Sciences 2026 - Press release 4 days ago NobelPrize.org Press release: Nobel Prize in Physics 2026 1 week ago",
+        "links": [
+          {
+            "title": "“You have to be willing to take risks”: the 2026 Nobel prizes",
+            "link": "https://www.google.com/goto?url=FIXTURE_87e11eb029f66882",
+            "url": null
+          },
+          {
+            "title": "2026 Nobel Prize winners | List, Physiology, Medicine, Physics, Chemistry, Literature, Economics, & Facts",
+            "link": "https://www.google.com/goto?url=FIXTURE_3afdddbf8adc6ed3",
+            "url": null
+          },
+          {
+            "title": "Prize in Economic Sciences 2026 - Press release",
+            "link": "https://www.google.com/goto?url=FIXTURE_367db67c44a301af",
+            "url": null
+          },
+          {
+            "title": "Press release: Nobel Prize in Physics 2026",
+            "link": "https://www.google.com/goto?url=FIXTURE_fc7ae397f4d8d399",
+            "url": null
+          }
+        ]
+      },
+      {
+        "title": "Short videos",
+        "text": "The Nobel Committee awarded the 2026 Nobel Peace Prize to ... Facebook · CBS News 2026 Nobel Prize Laureates Announced Facebook · Embassy of Sweden in Doha - سفارة السويد في الدوحة Nobel Economics Prize 2026 explained | DW News YouTube · DW News The 2026 Nobel Laureates have been announced! Every ... Facebook · Embassy of Sweden in Manila Celebrating the 2026 Nobel Prize Laureates ... Facebook · Embassy of Sweden in Doha - سفارة السويد في الدوحة What you need to know about the 2026 Nobel Prize in ... YouTube · Scientific American The 2026 Nobel Prize laureates have officially been ... Facebook · Consulate General of Sweden in New York 2 scientists awarded 2026 Nobel Prize for Chemistry YouTube · PBS NewsHour Tomorrow we start announcing the 2026 Nobel Prizes Facebook · Nobel Prize Nobel Prize laureates David MacMillan and Craig Mello will be ... Facebook · Nobel Prize",
+        "links": [
+          {
+            "title": "The Nobel Committee awarded the 2026 Nobel Peace Prize to ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_a6f06b4a6ca6f07c",
+            "url": null
+          },
+          {
+            "title": "2026 Nobel Prize Laureates Announced",
+            "link": "https://www.google.com/goto?url=FIXTURE_10ee7fe780ceb867",
+            "url": null
+          },
+          {
+            "title": "Nobel Economics Prize 2026 explained | DW News",
+            "link": "https://www.google.com/goto?url=FIXTURE_4727d1d9ef7c0fe4",
+            "url": null
+          },
+          {
+            "title": "The 2026 Nobel Laureates have been announced! Every ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_6479ed7c079d6fdb",
+            "url": null
+          },
+          {
+            "title": "Celebrating the 2026 Nobel Prize Laureates ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_22867a482049ce98",
+            "url": null
+          }
+        ]
+      }
+    ]
   }
 }

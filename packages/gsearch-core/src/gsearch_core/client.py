@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from gsearch_parse import PARSER_VERSION, parse_page
 from gsearch_parse.models import (
     ErrorCode,
+    Link,
     OrganicResult,
     PageContent,
     PageState,
@@ -84,7 +85,13 @@ class SearchClient:
         result = parse_page(page.html, url=page.url, status=page.status, headers=page.headers, page=req.page)
         if result.state in (PageState.OK, PageState.EMPTY_VALID) and result.data is not None:
             data = result.data
-            organic, warnings = await self._resolve(data.organic)
+            resolved = await self._resolve(
+                [str(r.link) for r in data.organic if r.url is None]
+                + [str(x.link) for b in data.answer_boxes for x in b.links if x.url is None]
+            )
+            organic = [_with_url(r, resolved) for r in data.organic]
+            missing = sum(1 for r in organic if r.url is None) if resolved is not None else 0
+            warnings = [f"{missing} result URL(s) could not be resolved"] if missing else []
             resp = SearchResponse(
                 request=req,
                 organic=organic,
@@ -94,6 +101,10 @@ class SearchClient:
                 people_also_ask=data.people_also_ask,
                 related_searches=data.related_searches,
                 pagination=data.pagination,
+                answer_boxes=[
+                    b.model_copy(update={"links": [_with_url(x, resolved) for x in b.links]})
+                    for b in data.answer_boxes
+                ],
                 meta=ResponseMeta(
                     engine=page.engine,
                     backend=page.backend,
@@ -138,20 +149,18 @@ class SearchClient:
             details={"backend": self.fetcher.name},
         )
 
-    async def _resolve(self, organic: list[OrganicResult]) -> tuple[list[OrganicResult], list[str]]:
-        """Fill `url` from the backend's /goto resolution, when it offers one."""
-        pending = [str(r.link) for r in organic if r.url is None]
-        if not pending or not isinstance(self.fetcher, LinkResolver):
-            return organic, []
-        resolved = await self.fetcher.resolve_links(pending)
-        out: list[OrganicResult] = []
-        for r in organic:
-            target = resolved.get(str(r.link)) if r.url is None else None
-            if target:
-                # Validate: model_copy(update=...) would store an unvalidated str. A non-http(s)
-                # target keeps url unset and is reported below.
-                with contextlib.suppress(ValidationError):
-                    r = OrganicResult.model_validate({**r.model_dump(), "url": target})
-            out.append(r)
-        missing = sum(1 for r in out if r.url is None)
-        return out, ([f"{missing} result URL(s) could not be resolved"] if missing else [])
+    async def _resolve(self, links: list[str]) -> dict[str, str | None] | None:
+        """Destinations of /goto links from the backend; None when it offers no resolution."""
+        if not links or not isinstance(self.fetcher, LinkResolver):
+            return None
+        return await self.fetcher.resolve_links(links)
+
+
+def _with_url[T: (OrganicResult, Link)](item: T, resolved: dict[str, str | None] | None) -> T:
+    target = resolved.get(str(item.link)) if resolved and item.url is None else None
+    if target:
+        # Validate: model_copy(update=...) would store an unvalidated str. A non-http(s)
+        # target keeps url unset and is reported as unresolved.
+        with contextlib.suppress(ValidationError):
+            return type(item).model_validate({**item.model_dump(), "url": target})
+    return item

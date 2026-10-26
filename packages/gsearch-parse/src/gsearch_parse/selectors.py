@@ -30,6 +30,8 @@ class SelectorSet:
     next_page: str
     ai_overview: str
     paa_question: str
+    box_heading: str
+    box_item: str
 
 
 GECKO_2026_10 = SelectorSet(
@@ -48,6 +50,8 @@ GECKO_2026_10 = SelectorSet(
     next_page="#pnnext",
     ai_overview='#m-x-content [data-scope-id="turn"]',
     paa_question="#search [data-q]",
+    box_heading='h2, [role="heading"][aria-level="2"]',
+    box_item='[role="heading"][aria-level="3"]',
 )
 
 SELECTOR_SETS: tuple[SelectorSet, ...] = (GECKO_2026_10,)

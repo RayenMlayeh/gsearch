@@ -84,6 +84,14 @@ class AIOverview(_Model):
     sources: list[Link] = Field(default_factory=list)
 
 
+class AnswerBox(_Model):
+    title: str = Field(
+        description="Box heading as Google shows it, e.g. 'Top stories' (in the page language)."
+    )
+    text: str = Field(description="Visible text of the box, e.g. teams and kickoff time, or headlines.")
+    links: list[Link] = Field(default_factory=list, description="First links of the box.")
+
+
 class PeopleAlsoAsk(_Model):
     question: str
 
@@ -115,6 +123,7 @@ class SerpData(_Model):
     people_also_ask: list[PeopleAlsoAsk] = Field(default_factory=list)
     related_searches: list[str] = Field(default_factory=list)
     pagination: Pagination | None = None
+    answer_boxes: list[AnswerBox] = Field(default_factory=list)
 
 
 class ResponseMeta(_Model):
@@ -142,6 +151,11 @@ class SearchResponse(_Model):
     people_also_ask: list[PeopleAlsoAsk]
     related_searches: list[str]
     pagination: Pagination | None
+    answer_boxes: list[AnswerBox] = Field(
+        default_factory=list,
+        description="Google's other boxes (sports results, top stories, videos...): often the freshest "
+        "answer for news, sports and events.",
+    )
     meta: ResponseMeta
 
 

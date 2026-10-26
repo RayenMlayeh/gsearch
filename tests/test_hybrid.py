@@ -230,7 +230,8 @@ async def test_result_urls_resolved_over_http_from_302(fake: tuple[str, Seen]) -
         resp = await client.search(SearchRequest(query="what is asyncio in python"))
         assert isinstance(resp, SearchResponse)
         assert all(str(r.url).startswith("https://destination.example/FIXTURE_") for r in resp.organic)
-        assert browser.resolves == len(resp.organic)
+        assert browser.resolves == len(resp.organic) + sum(len(b.links) for b in resp.answer_boxes)
+        assert all(x.url is not None for b in resp.answer_boxes for x in b.links)
         assert seen.destination_hits == 0  # Location was read, never followed
     finally:
         await fetcher.aclose()

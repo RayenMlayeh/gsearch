@@ -30,7 +30,7 @@ claude mcp add gsearch --scope user -e GSEARCH_PROXY="gate.example.com:7000:user
 
 | MCP tool | Returns |
 |---|---|
-| `google_search(query, page, lang, country, time_range, site)` | Organic results with real URLs, AI Overview, People also ask, related searches, ads, pagination. A block is an error with `retry_after_s`, never an empty list. |
+| `google_search(query, page, lang, country, time_range, site)` | Organic results with real URLs, answer boxes (sports results, top stories, videos), AI Overview, People also ask, related searches, ads, pagination. A block is an error with `retry_after_s`, never an empty list. |
 | `fetch_page(url)` | A page's title, readable text and links, to read the results. Through your proxy, counted against the data limit. |
 | `google_search_status()` | Proxy data used against the limit, IPs used and blocked, the cache. Never contacts Google. |
 

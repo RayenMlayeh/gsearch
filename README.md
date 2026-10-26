@@ -25,7 +25,8 @@
 <h3 align="center">Real Google Search for your AI agent. No API key. Self-hosted. Over MCP.</h3>
 
 Your agent calls `google_search` and gets Google's actual results page as typed JSON: every link resolved to
-its real URL, plus the AI Overview, People also ask and related searches. A real Firefox
+its real URL, plus Google's answer boxes (sports results, top stories, videos), the AI Overview, People
+also ask and related searches. A real Firefox
 ([Camoufox](https://github.com/daijro/camoufox)) runs Google's page as it is, on your own IP or through any
 proxy you already have.
 
@@ -178,7 +179,7 @@ Error codes: `captcha`, `soft_block`, `hard_block`, `consent_wall`, `js_gate`, `
 <p align="center"><img src="docs/assets/how-it-works.svg" alt="One search: agent asks, fresh IP, real Firefox, clean JSON, all closed" width="100%"></p>
 
 - **Like a person.** A visible window, because headless sessions were challenged far more often on proxy IPs
-  ([F-0015](docs/findings/F-0015-b1-residential-proxy-benchmark.md)). The query is typed into the address
+  ([F-0015](docs/findings/F-0015-b1-residential-proxy-benchmark.md)); `GSEARCH_HEADLESS=1` hides it. The query is typed into the address
   bar. WebRTC is off, so your own IP can't leak around the proxy.
 - **Never forged.** gsearch never generates or alters Google's tokens: the browser runs the page as it is.
 - **Cheap links.** Links are resolved on the same IP with the same cookies and a TLS fingerprint matching the
@@ -246,6 +247,7 @@ python tools/benchmark.py -n 10
 |---|---|
 | `GSEARCH_PROXY` | Your proxies, in any format above, or a file listing them. Unset: your own IP. |
 | `GSEARCH_DATA_LIMIT_MB` | Stop all proxy traffic at this many MB, counted across restarts. Unset: no limit. |
+| `GSEARCH_HEADLESS` | `1`: no browser window behind proxies either. Unset: a visible window, which drew fewer CAPTCHAs on proxy IPs. Your own IP is always headless. |
 | `GSEARCH_ENV_FILE` | Absolute path of your `.env`. Needed in MCP client configs. If set, the file must exist. |
 | `GSEARCH_FIXTURES_DIR` | Answer from saved pages instead of Google (demos and tests). |
 | `GSEARCH_STATE_DIR` | Where budgets, the data meter and saved block pages live. Default: `%LOCALAPPDATA%\gsearch` or `~/.local/share/gsearch`. |

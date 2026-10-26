@@ -111,6 +111,17 @@
       "note": ""
     },
     {
+      "id": "c9-sports-top-stories",
+      "query": "psg lyon",
+      "page": 1,
+      "file": "c9-sports-top-stories.html.gz",
+      "url": "https://www.google.com/search?q=psg+lyon&hl=en",
+      "status": 200,
+      "engine": "gecko",
+      "source": "home-ip camoufox 1a7b9a71",
+      "note": "Arabic interface (hl=ar from the exit IP): sports box, top stories, videos, short videos"
+    },
+    {
       "id": "s1-captcha",
       "query": "synthetic captcha",
       "page": 1,

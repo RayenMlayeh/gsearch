@@ -191,6 +191,39 @@
         9,
         10
       ]
-    }
+    },
+    "answer_boxes": [
+      {
+        "title": "Short videos",
+        "text": "The Eiffel Tower, named for Gustave Eiffel, the engineer who ... Instagram · Mike Eliason The Eiffel Tower stands at 330 meters tall, dominating the Paris ... Facebook · Pyramid Secrets iron lattice tower in Paris, France, built by Gustave Eiffel for the ... Facebook · Jocelyn N Pineda What's the REAL Height of the Eiffel Tower? #shorts ... YouTube · Workflow Waves The tower was the tallest man-made structure in the world for ... Instagram · Pradeep Krishnan How tall is the Eiffel Tower? #HotelPlannerTour Facebook · HotelPlanner Tour How Tall is the Eiffel Tower in Paris? 🇫🇷 KeeKee Fun Facts ... YouTube · KeeKee's Big Adventures- Kids Educational Cartoons Eiffel Tower Paris, France 🇫🇷 Facebook · Travel Paris Here are three facts about the Eiffel Tower—the most ionic ... Facebook · DW Travel Exactly How Tall is the Eiffel Tower!? | Surya Kerung Facebook · Surya Kerung",
+        "links": [
+          {
+            "title": "The Eiffel Tower, named for Gustave Eiffel, the engineer who ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_fcd864edc5d7e208",
+            "url": null
+          },
+          {
+            "title": "The Eiffel Tower stands at 330 meters tall, dominating the Paris ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_d4370a31eaf28adb",
+            "url": null
+          },
+          {
+            "title": "iron lattice tower in Paris, France, built by Gustave Eiffel for the ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_618def0d05f7f5a6",
+            "url": null
+          },
+          {
+            "title": "What's the REAL Height of the Eiffel Tower? #shorts ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_9d41d4700c68882e",
+            "url": null
+          },
+          {
+            "title": "The tower was the tallest man-made structure in the world for ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_005ca8597e810977",
+            "url": null
+          }
+        ]
+      }
+    ]
   }
 }

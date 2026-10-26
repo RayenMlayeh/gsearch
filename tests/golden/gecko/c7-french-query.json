@@ -153,6 +153,60 @@
         9,
         10
       ]
-    }
+    },
+    "answer_boxes": [
+      {
+        "title": "Videos",
+        "text": "Où déjeuner sans se ruiner à Tunis ? Découvrez 7 adresses ... Facebook L'instant M Nov 7, 2025 Certifié comme meilleur restaurant gastronomique tunisien, Dar ... Facebook Les Amis de la Tunisie by Tyna Dec 16, 2025 Où manger dans le Grand Tunis?? Petite liste non exhaustive ... Instagram Sarah Jul 23, 2026",
+        "links": [
+          {
+            "title": "Où déjeuner sans se ruiner à Tunis ? Découvrez 7 adresses ... Facebook · L'instant M Nov 7, 2025",
+            "link": "https://www.google.com/goto?url=FIXTURE_9a6e78ad82857c7a",
+            "url": null
+          },
+          {
+            "title": "Certifié comme meilleur restaurant gastronomique tunisien, Dar ... Facebook · Les Amis de la Tunisie by Tyna Dec 16, 2025",
+            "link": "https://www.google.com/goto?url=FIXTURE_622ccbbaf742d296",
+            "url": null
+          },
+          {
+            "title": "Où manger dans le Grand Tunis?? Petite liste non exhaustive ... Instagram · Sarah Jul 23, 2026",
+            "link": "https://www.google.com/goto?url=FIXTURE_312d58a4b37de860",
+            "url": null
+          }
+        ]
+      },
+      {
+        "title": "Short videos",
+        "text": "Où déjeuner sans se ruiner à Tunis ? Découvrez 7 adresses ... Facebook · L'instant M Où manger dans le Grand Tunis?? Petite liste non exhaustive ... Instagram · Sarah Certifié comme meilleur restaurant gastronomique tunisien, Dar ... Facebook · Les Amis de la Tunisie by Tyna Où déjeuner sans se ruiner à Tunis ? Découvrez 7 adresses ... Facebook · L'instant M Le Golfe : 𝗠𝗲𝗶𝗹𝗹𝗲𝘂𝗿 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁 𝗱𝗲 𝗧𝘂𝗻𝗶𝘀𝗶𝗲 ... Instagram · tunisie.co واحد من أفضل المطاعم الراقية في تونس الكبرى ... تعرفوه @cult ... Instagram · Yasser Hana Découvrez les plus belles adresses gastronomiques de Tunisie ... Facebook · Dinner App Dar Zarrouk : Le restaurant incontournable à Sidi Bou Said TikTok · fatoutouix Some places are too good to stay secret Here's our ... Instagram · Marhba.tn En quête d'un 𝗯𝗼𝗻 𝗽𝗹𝗮𝗻 au centre-ville de Tunis, restaurant ... Facebook · Les bons plans des soirées",
+        "links": [
+          {
+            "title": "Où déjeuner sans se ruiner à Tunis ? Découvrez 7 adresses ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_9a6e78ad82857c7a",
+            "url": null
+          },
+          {
+            "title": "Où manger dans le Grand Tunis?? Petite liste non exhaustive ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_312d58a4b37de860",
+            "url": null
+          },
+          {
+            "title": "Certifié comme meilleur restaurant gastronomique tunisien, Dar ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_622ccbbaf742d296",
+            "url": null
+          },
+          {
+            "title": "Où déjeuner sans se ruiner à Tunis ? Découvrez 7 adresses ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_2555027b252a5f4f",
+            "url": null
+          },
+          {
+            "title": "Le Golfe : 𝗠𝗲𝗶𝗹𝗹𝗲𝘂𝗿 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁 𝗱𝗲 𝗧𝘂𝗻𝗶𝘀𝗶𝗲 ...",
+            "link": "https://www.google.com/goto?url=FIXTURE_b4d2d8359a9febfb",
+            "url": null
+          }
+        ]
+      }
+    ]
   }
 }

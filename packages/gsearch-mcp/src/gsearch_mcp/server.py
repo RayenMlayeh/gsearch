@@ -60,6 +60,9 @@ def _summary(resp: SearchResponse) -> str:
     lines = [f"{len(resp.organic)} organic results ({resp.meta.backend}, state={resp.meta.page_state})."]
     for r in resp.organic:
         lines.append(f"{r.position}. {r.title} - {r.url or r.display_url or r.link}")
+    for box in resp.answer_boxes:
+        lines.append(f"[{box.title}] {box.text[:300]}")
+        lines.extend(f"  - {x.title} - {x.url or x.link}" for x in box.links)
     lines.append(UNTRUSTED)
     return "\n".join(lines)
 
@@ -84,9 +87,13 @@ def build_server(client: SearchClient, *, live: bool) -> MCPServer:
         name="google_search",
         title="Google search",
         description=(
-            "Search Google and return structured results: organic results, ads, featured snippet, "
-            "People Also Ask questions, related searches and pagination. Never returns raw HTML. "
-            "On a block, returns an error with `code` (captcha, soft_block, hard_block, consent_wall, "
+            "Search Google and return structured results: organic results, answer boxes (sports results, "
+            "top stories, videos), AI Overview, People Also Ask, related searches and pagination. Never "
+            "returns raw HTML. For news, sports and events, read answer_boxes first: they carry the latest "
+            "facts. For 'today' or 'tonight' questions, do not set time_range; it hides schedule pages. "
+            "Before answering, open the most relevant result or box links with fetch_page instead of "
+            "relying on snippets. Set lang (e.g. 'en') to choose the interface language. On a block, "
+            "returns an error with `code` (captcha, soft_block, hard_block, consent_wall, "
             "js_gate, rate_limited, parse_drift, ...) and `retry_after_s`. " + UNTRUSTED
         ),
         annotations=ToolAnnotations(read_only_hint=True, open_world_hint=True, idempotent_hint=True),

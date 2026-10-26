@@ -553,6 +553,8 @@ def test_settings_from_dotenv(tmp_path: Path) -> None:
     assert fetcher.status()["proxy"] == "http://user-u-sid-<sid>-ttl-30:***@h:1"
     browser = fetcher.config.browser
     assert browser.headless is False and browser.entry == "address_bar" and browser.fingerprint_preset
+    headless, _ = fetcher_from_env({**env, "GSEARCH_HEADLESS": "1"})
+    assert isinstance(headless, ProxyPool) and headless.config.browser.headless is True
 
 
 def test_env_file_can_be_named_explicitly(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

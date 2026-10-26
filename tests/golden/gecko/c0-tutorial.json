@@ -151,6 +151,39 @@
         9,
         10
       ]
-    }
+    },
+    "answer_boxes": [
+      {
+        "title": "Videos",
+        "text": "Python Tutorial: AsyncIO - Complete Guide to Asynchronous ... YouTube Corey Schafer Aug 20, 2025 6 key moments 6 key moments in this video Asyncio in Python - Full Tutorial YouTube Tech With Tim Apr 5, 2024 7 key moments 7 key moments in this video Python AsyncIO Explained in 9 Minutes YouTube NeuralNine Aug 1, 2025 Python Asynchronous Programming Tutorial: Asyncio, async & ... YouTube Code with Josh Sep 25, 2025 9 key moments 9 key moments in this video",
+        "links": [
+          {
+            "title": "Python Tutorial: AsyncIO - Complete Guide to Asynchronous ... YouTube · Corey Schafer Aug 20, 2025",
+            "link": "https://www.google.com/goto?url=FIXTURE_9bec12c8c8fef597",
+            "url": null
+          },
+          {
+            "title": "From 03:59 Event Loop",
+            "link": "https://www.google.com/goto?url=FIXTURE_fbfa86b2f4a7cc1c",
+            "url": null
+          },
+          {
+            "title": "From 04:09 The Event Loop",
+            "link": "https://www.google.com/goto?url=FIXTURE_dd8c8327cff7326b",
+            "url": null
+          },
+          {
+            "title": "From 07:23 Three Main Types of Awaitable Objects",
+            "link": "https://www.google.com/goto?url=FIXTURE_352355abc9f48362",
+            "url": null
+          },
+          {
+            "title": "From 49:48 Processes",
+            "link": "https://www.google.com/goto?url=FIXTURE_6f32383327bbbc85",
+            "url": null
+          }
+        ]
+      }
+    ]
   }
 }
