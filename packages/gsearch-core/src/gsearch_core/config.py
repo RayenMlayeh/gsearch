@@ -29,7 +29,7 @@ def load_env_file(path: Path, env: dict[str, str]) -> dict[str, str]:
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
-        env.setdefault(key.strip(), value.strip())
+        env.setdefault(key.strip(), value.strip().strip("\"'"))
     return env
 
 

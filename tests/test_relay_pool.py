@@ -515,7 +515,7 @@ def test_settings_from_dotenv(tmp_path: Path) -> None:
     from gsearch_core.pool import ProxyPool
 
     (tmp_path / ".env").write_text(
-        "# comment\nGSEARCH_PROXY=h:1:user-u-sid-{sid}-ttl-30:pw\nGSEARCH_DATA_LIMIT_MB=700\n",
+        '# comment\nGSEARCH_PROXY="h:1:user-u-sid-{sid}-ttl-30:pw"\nGSEARCH_DATA_LIMIT_MB=700\n',
         encoding="utf-8",
     )
     env = load_env_file(
