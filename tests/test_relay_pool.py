@@ -451,6 +451,32 @@ async def test_pool_refuses_when_data_limit_used(pool_factory: Any, tmp_path: Pa
         await pool.aclose()
 
 
+async def test_pages_go_through_the_proxy_and_count_against_the_limit(
+    pool_factory: Any, upstream: FakeUpstream, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from gsearch_core import page
+
+    async def public(host: str) -> str:
+        return "93.184.215.14"
+
+    monkeypatch.setattr(page, "public_address", public)
+    pool = pool_factory(byte_cap_bytes=1_000_000)
+    try:
+        relay_url = await pool.page_proxy()
+        assert await pool.page_proxy() == relay_url
+        content = await page.fetch_page("http://site.example/", proxy=relay_url)
+        assert content.text == "ok"
+        assert upstream.heads[-1].startswith(b"GET http://site.example/")
+        assert re.fullmatch(r"user-abc-network-res-country-us-sid-\d{8}-ttl-30", upstream.users[-1])
+        assert pool.meter.total > 0
+        pool.meter.add(2_000_000)
+        with pytest.raises(FetchError) as err:
+            await pool.page_proxy()
+        assert err.value.code == "proxy"
+    finally:
+        await pool.aclose()
+
+
 async def test_pool_replaces_a_dead_exit(pool_factory: Any) -> None:
     pool = pool_factory()
     try:

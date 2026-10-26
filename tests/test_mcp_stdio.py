@@ -27,7 +27,7 @@ async def mcp_client() -> AsyncIterator[Client]:
 
 async def test_tools_are_listed_with_schemas(mcp_client: Client) -> None:
     tools = {t.name: t for t in (await mcp_client.list_tools()).tools}
-    assert set(tools) == {"google_search", "google_search_status"}
+    assert set(tools) == {"google_search", "google_search_status", "fetch_page"}
     search = tools["google_search"]
     assert set(search.input_schema["properties"]) == {
         "query",
@@ -78,3 +78,9 @@ async def test_status_reports_cache_and_offline_backend(mcp_client: Client) -> N
     status = result.structured_content
     assert status["backend"] == "fixture" and status["live"] is False
     assert status["cache_hits"] == 1
+
+
+async def test_fetch_page_refuses_this_machine(mcp_client: Client) -> None:
+    result = await mcp_client.call_tool("fetch_page", {"url": "http://127.0.0.1:8080/admin"})
+    assert result.is_error and result.structured_content is not None
+    assert SearchError.model_validate(result.structured_content["error"]).code == "invalid_request"

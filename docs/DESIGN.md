@@ -13,7 +13,7 @@ above it:
 | `gsearch_parse` | none | HTML in, typed data out: page classification, versioned selector sets, invariants, JSON schema. Never imports `gsearch_core` (enforced by ruff). |
 | `gsearch_core` | yes | `SearchClient`, fetch backends, query cache, proxy pool and relay, pacing, durable state. |
 | `gsearch_cli` | via core | `gsearch search / parse / schema / identity check / setup`. Argument parsing and JSON output only. |
-| `gsearch_mcp` | via core | MCP server over stdio: `google_search`, `google_search_status`. No scraping logic. |
+| `gsearch_mcp` | via core | MCP server over stdio: `google_search`, `fetch_page`, `google_search_status`. No scraping logic. |
 
 Fetch backends all return a raw page; the client classifies and parses it, so every backend gets the same
 block detection and the same output:

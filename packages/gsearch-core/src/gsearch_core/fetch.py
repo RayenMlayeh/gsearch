@@ -75,6 +75,13 @@ class LinkResolver(Protocol):
 
 
 @runtime_checkable
+class PageProxy(Protocol):
+    """Optional backend capability: the proxy that page fetches go through."""
+
+    async def page_proxy(self) -> str: ...
+
+
+@runtime_checkable
 class StatusReporter(Protocol):
     def status(self) -> dict[str, str | int | float | bool | None]: ...
 

@@ -13,7 +13,7 @@ from typing import Annotated, Literal
 from gsearch_core.client import SearchClient
 from gsearch_core.config import fetcher_from_env
 from gsearch_core.fetch import StatusReporter
-from gsearch_parse.models import SearchError, SearchRequest, SearchResponse, TimeRange
+from gsearch_parse.models import PageContent, SearchError, SearchRequest, SearchResponse, TimeRange
 from mcp.server.mcpserver import MCPServer
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import BaseModel, Field, ValidationError
@@ -24,9 +24,10 @@ UNTRUSTED = (
 )
 
 INSTRUCTIONS = (
-    "Google web search. Results are rate limited and cached server-side; repeated identical queries return "
-    "the cached result. Blocks (captcha, rate limit, consent, layout change) are returned as tool errors "
-    "with a machine-readable `code` and `retry_after_s`; respect retry_after_s. " + UNTRUSTED
+    "Google web search, and page fetching for the pages it finds. Results are rate limited and cached "
+    "server-side; repeated identical queries return the cached result. Blocks (captcha, rate limit, "
+    "consent, layout change) are returned as tool errors with a machine-readable `code` and "
+    "`retry_after_s`; respect retry_after_s. " + UNTRUSTED
 )
 
 
@@ -61,6 +62,10 @@ def _summary(resp: SearchResponse) -> str:
         lines.append(f"{r.position}. {r.title} - {r.url or r.display_url or r.link}")
     lines.append(UNTRUSTED)
     return "\n".join(lines)
+
+
+def _page_text(page: PageContent) -> str:
+    return "\n\n".join([page.title or str(page.url), page.text, UNTRUSTED])
 
 
 def build_server(client: SearchClient, *, live: bool) -> MCPServer:
@@ -116,6 +121,29 @@ def build_server(client: SearchClient, *, live: bool) -> MCPServer:
             return _error_result(result)
         return CallToolResult(
             content=[TextContent(type="text", text=_summary(result))],
+            structured_content=result.model_dump(mode="json"),
+            _meta={"provenance": {"untrusted_content": True}},
+        )
+
+    @server.tool(
+        name="fetch_page",
+        title="Fetch page",
+        description=(
+            "Fetch a public web page (http or https, HTML or plain text) and return its readable text and "
+            "the links in its main content. Use it to read pages found with google_search. Text is cut at "
+            "30,000 characters. Goes through the configured proxy, so it counts against the data limit. "
+            + UNTRUSTED
+        ),
+        annotations=ToolAnnotations(read_only_hint=True, open_world_hint=True, idempotent_hint=True),
+    )
+    async def fetch_page(
+        url: Annotated[str, Field(min_length=1, max_length=4096, description="http(s) URL of the page.")],
+    ) -> Annotated[CallToolResult, PageContent]:
+        result = await client.fetch_page(url)
+        if isinstance(result, SearchError):
+            return _error_result(result)
+        return CallToolResult(
+            content=[TextContent(type="text", text=_page_text(result))],
             structured_content=result.model_dump(mode="json"),
             _meta={"provenance": {"untrusted_content": True}},
         )

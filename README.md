@@ -45,7 +45,8 @@ claude mcp add gsearch --scope user -- gsearch-mcp    # or any MCP client, below
 ```
 
 Then just ask: *"Search Google for what asyncio is and give me the top three links"*, *"What do people also
-ask about asyncio?"*, *"Find asyncio pages on python.org from the past year."*
+ask about asyncio?"*, *"Find asyncio pages on python.org from the past year."*, *"Search for the asyncio docs and
+summarize the first result."*
 
 Without a proxy, gsearch uses your own IP, at most 20 searches an hour. For more, add a proxy in any format:
 
@@ -133,7 +134,7 @@ Google's official search API is closed to new customers and shuts down on 1 Janu
   real-device fingerprint and a locale that matches its IP.
 - 🔗 **Real URLs.** Google hides result links behind `/goto` redirects. gsearch resolves every one to the
   page it points to, without loading that page.
-- 🤖 **Built for agents.** One MCP server, two tools, typed JSON. Blocks come back as clear errors with
+- 🤖 **Built for agents.** One MCP server: search, page reading and status, typed JSON. Blocks come back as clear errors with
   `retry_after_s`, never as empty results, and every string is flagged as untrusted web content.
 - 🌍 **Any proxy, any format.** Rotating residential, static VPS or datacenter lists, HTTP, HTTPS or SOCKS5,
   in any common layout. Every byte is counted, with a hard data limit.
@@ -261,11 +262,13 @@ and a 10-minute cache for repeated queries.
 | MCP tool | Arguments | Returns |
 |---|---|---|
 | `google_search` | `query`, and optionally `page` (1–50), `lang` (`en`, `fr`, …), `country` (`us`, …), `time_range` (`h`, `d`, `w`, `m`, `y`), `site` (a domain) | The JSON above plus a short text summary, or an error result on a block. |
+| `fetch_page` | `url` (a public `http`/`https` page) | The page's title, readable text (up to 30,000 characters) and the links in its main content. Goes through your proxy and counts against the data limit. Refuses this machine and private networks. |
 | `google_search_status` | none | Proxy data used against the limit, IPs used and blocked, and the cache. Never contacts Google. |
 
 ```text
 gsearch search "query" [--page N] [--lang xx] [--country xx] [--time-range h|d|w|m|y] [--site domain]
 gsearch search "query" --fixtures fixtures/gecko     answer from saved pages (offline, from a clone of this repo)
+gsearch fetch URL                                    readable text and links of a web page
 gsearch parse page.html                              parse any saved Google results page
 gsearch schema                                       print the JSON Schema
 gsearch identity check                               home-IP browser's fingerprint matches its IP (no Google traffic)

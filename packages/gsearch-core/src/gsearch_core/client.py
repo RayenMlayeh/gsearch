@@ -12,6 +12,7 @@ from gsearch_parse import PARSER_VERSION, parse_page
 from gsearch_parse.models import (
     ErrorCode,
     OrganicResult,
+    PageContent,
     PageState,
     ResponseMeta,
     SearchError,
@@ -21,7 +22,8 @@ from gsearch_parse.models import (
 from pydantic import ValidationError
 
 from .cache import CacheStats, QueryCache
-from .fetch import Fetcher, FetchError, LinkResolver
+from .fetch import Fetcher, FetchError, LinkResolver, PageProxy
+from .page import fetch_page
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,6 +59,7 @@ _FETCH_REMEDIATION: dict[str, str] = {
     "rate_limited": "Budget for this identity is used up; wait retry_after_s. Do not loop on the tool.",
     "captcha": "Identity is resting after a Google challenge; wait retry_after_s.",
     "network": "Browser or network failure; retry later.",
+    "invalid_request": "Pass the URL of a public http(s) page that serves HTML or plain text.",
 }
 
 
@@ -76,15 +79,7 @@ class SearchClient:
         try:
             page = await self.fetcher.fetch(req)
         except FetchError as exc:
-            return SearchError(
-                code=exc.code,
-                message=str(exc),
-                retryable=exc.retryable,
-                retry_after_s=exc.retry_after_s,
-                remediation=_FETCH_REMEDIATION.get(exc.code, "Check the backend configuration."),
-                evidence_ref=exc.evidence_ref,
-                details={"backend": self.fetcher.name},
-            )
+            return self._fetch_error(exc)
 
         result = parse_page(page.html, url=page.url, status=page.status, headers=page.headers, page=req.page)
         if result.state in (PageState.OK, PageState.EMPTY_VALID) and result.data is not None:
@@ -123,6 +118,24 @@ class SearchClient:
             remediation=policy.remediation,
             evidence_ref=page.evidence_ref,
             details={"backend": page.backend, "signals": ",".join(result.signals)},
+        )
+
+    async def fetch_page(self, url: str) -> PageContent | SearchError:
+        try:
+            proxy = await self.fetcher.page_proxy() if isinstance(self.fetcher, PageProxy) else None
+            return await fetch_page(url, proxy=proxy)
+        except FetchError as exc:
+            return self._fetch_error(exc)
+
+    def _fetch_error(self, exc: FetchError) -> SearchError:
+        return SearchError(
+            code=exc.code,
+            message=str(exc),
+            retryable=exc.retryable,
+            retry_after_s=exc.retry_after_s,
+            remediation=_FETCH_REMEDIATION.get(exc.code, "Check the backend configuration."),
+            evidence_ref=exc.evidence_ref,
+            details={"backend": self.fetcher.name},
         )
 
     async def _resolve(self, organic: list[OrganicResult]) -> tuple[list[OrganicResult], list[str]]:

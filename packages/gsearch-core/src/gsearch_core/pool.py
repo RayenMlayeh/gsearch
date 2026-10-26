@@ -85,6 +85,7 @@ class ProxyPool:
         self._locate = locate
         self._members: dict[str, Member] = {}
         self._dead_until: dict[str, float] = {}
+        self._page_relay: Relay | None = None
         self._turn = 0
         self._lock = asyncio.Lock()
         self._slots = asyncio.Semaphore(PARALLEL if self.rotating else len(config.proxies))
@@ -181,13 +182,16 @@ class ProxyPool:
                     await self._retire(member, "done")
 
     # ---------------------------------------------------------------- search
-    async def fetch(self, req: SearchRequest) -> FetchedPage:
+    def _check_limit(self) -> None:
         if self.meter.exceeded:
             raise FetchError(
                 "proxy",
                 f"proxy data limit reached ({self.meter.total / 1e6:.0f} MB); raise GSEARCH_DATA_LIMIT_MB",
                 retryable=False,
             )
+
+    async def fetch(self, req: SearchRequest) -> FetchedPage:
+        self._check_limit()
         await self._sweep()
         async with self._slots:
             tried: set[str] = set()
@@ -243,6 +247,15 @@ class ProxyPool:
             if self.rotating and member.busy == 0:
                 await self._retire(member, "done")  # one-shot: close it now, not at the next search
 
+    async def page_proxy(self) -> str:
+        self._check_limit()
+        async with self._lock:
+            if self._page_relay is None:
+                upstream = self._rng.choice(self.config.proxies).with_session(self._rng)
+                self._page_relay = Relay(upstream, self.meter, tag="pages")
+                await self._page_relay.start()
+            return self._page_relay.url
+
     # ---------------------------------------------------------------- status
     def status(self) -> dict[str, str | int | float | bool | None]:
         return {
@@ -259,4 +272,6 @@ class ProxyPool:
     async def aclose(self) -> None:
         for member in list(self._members.values()):
             await self._retire(member, "shutdown")
+        if self._page_relay is not None:
+            await self._page_relay.close()
         self.meter.save()

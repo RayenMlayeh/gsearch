@@ -4,6 +4,8 @@
   gsearch search "query" [...]                     search Google (settings: GSEARCH_* in the environment
                                                    or .env, see gsearch_core.config)
   gsearch search "query" --fixtures DIR [...]      search saved pages (offline)
+  gsearch fetch URL                                readable text and links of a web page (through the proxy
+                                                   when GSEARCH_PROXY is set)
   gsearch identity check [--headed]                launch the home-IP device against a local page and
                                                    check it is coherent with its exit IP (no Google traffic)
   gsearch schema                                   print the output JSON schema
@@ -28,7 +30,7 @@ from gsearch_core.client import SearchClient
 from gsearch_core.config import default_env, fetcher_from_env
 from gsearch_core.fetch import Fetcher, FixtureFetcher
 from gsearch_parse import PageState, parse_page
-from gsearch_parse.models import SearchError, SearchRequest, SearchResponse
+from gsearch_parse.models import PageContent, SearchError, SearchRequest, SearchResponse
 from gsearch_parse.schema import render
 
 
@@ -78,6 +80,22 @@ def cmd_search(args: argparse.Namespace) -> int:
     if isinstance(result, SearchError):
         _emit({"error": result.model_dump(mode="json")})
         return 4 if result.code == "parse_drift" else 3
+    _emit(result.model_dump(mode="json"))
+    return 0
+
+
+async def _fetch_once(fetcher: Fetcher, url: str) -> PageContent | SearchError:
+    try:
+        return await SearchClient(fetcher).fetch_page(url)
+    finally:
+        await fetcher.aclose()
+
+
+def cmd_fetch(args: argparse.Namespace) -> int:
+    result = asyncio.run(_fetch_once(fetcher_from_env()[0], args.url))
+    if isinstance(result, SearchError):
+        _emit({"error": result.model_dump(mode="json")})
+        return 3
     _emit(result.model_dump(mode="json"))
     return 0
 
@@ -173,6 +191,10 @@ def build_parser() -> argparse.ArgumentParser:
     ps.add_argument("--time-range", choices=["h", "d", "w", "m", "y"])
     ps.add_argument("--site")
     ps.set_defaults(func=cmd_search)
+
+    pf = sub.add_parser("fetch", help="readable text and links of a web page")
+    pf.add_argument("url")
+    pf.set_defaults(func=cmd_fetch)
 
     ident = sub.add_parser("identity", help="identity tools")
     isub = ident.add_subparsers(dest="identity_command", required=True)
