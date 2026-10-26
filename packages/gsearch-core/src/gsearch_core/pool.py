@@ -36,6 +36,7 @@ log = logging.getLogger(__name__)
 PARALLEL = 3  # rotating proxies: browsers at once
 LEASE_S = 60.0  # a member that just served a page keeps it until its links are resolved, at most this long
 SPAWN_DRAWS = 4  # fresh exits tried before giving up (dead or wrong-country exits)
+DEAD_S = 600.0  # a static proxy that failed its location check is skipped this long
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,6 +84,7 @@ class ProxyPool:
         self._make = make_fetcher or (lambda cfg: HybridFetcher(CamoufoxFetcher(cfg)))
         self._locate = locate
         self._members: dict[str, Member] = {}
+        self._dead_until: dict[str, float] = {}
         self._turn = 0
         self._lock = asyncio.Lock()
         self._slots = asyncio.Semaphore(PARALLEL if self.rotating else len(config.proxies))
@@ -149,10 +151,11 @@ class ProxyPool:
             fallback: Member | None = None
             for i in range(len(proxies)):
                 upstream = proxies[(start + i) % len(proxies)]
-                if upstream.key in exclude:
+                if upstream.key in exclude or self._dead_until.get(upstream.key, 0.0) > time.monotonic():
                     continue
                 member = self._members.get(upstream.key) or await self._spawn(upstream)
                 if member is None:
+                    self._dead_until[upstream.key] = time.monotonic() + DEAD_S
                     continue
                 wait = member.fetcher.browser.ready_in_s()
                 if wait > 0:

@@ -427,6 +427,18 @@ async def test_a_static_proxy_that_gets_a_captcha_rests_and_the_next_one_serves(
         await pool.aclose()
 
 
+async def test_a_dead_static_proxy_is_not_tried_again_on_every_search(pool_factory: Any) -> None:
+    proxies = parse_proxies("u:p@10.0.0.1:3128 u:p@10.0.0.2:3128")
+    pool = pool_factory(proxies=proxies, countries=["dead"])
+    try:
+        for q in ("a", "b", "c"):
+            await pool.fetch(SearchRequest(query=q))
+        (serving,) = FakeHybrid.instances
+        assert serving.fetched == ["a", "b", "c"]
+    finally:
+        await pool.aclose()
+
+
 async def test_pool_refuses_when_data_limit_used(pool_factory: Any, tmp_path: Path) -> None:
     (tmp_path / "bytes.json").write_text(json.dumps({"total": 2_000_000}), encoding="utf-8")
     pool = pool_factory(byte_cap_bytes=1_000_000)
