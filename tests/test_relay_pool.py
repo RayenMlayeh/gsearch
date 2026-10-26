@@ -439,6 +439,15 @@ async def test_a_dead_static_proxy_is_not_tried_again_on_every_search(pool_facto
         await pool.aclose()
 
 
+async def test_a_block_on_the_only_static_proxy_is_reported_as_the_block(pool_factory: Any) -> None:
+    pool = pool_factory(proxies=parse_proxies("u:p@10.0.0.1:3128"))
+    try:
+        page = await pool.fetch(SearchRequest(query="block me"))
+        assert page.block_retry_after_s == 3600 and page.status == 429
+    finally:
+        await pool.aclose()
+
+
 async def test_pool_refuses_when_data_limit_used(pool_factory: Any, tmp_path: Path) -> None:
     (tmp_path / "bytes.json").write_text(json.dumps({"total": 2_000_000}), encoding="utf-8")
     pool = pool_factory(byte_cap_bytes=1_000_000)

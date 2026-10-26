@@ -281,3 +281,14 @@ async def test_a_lasting_identity_keeps_its_device_across_launches(tmp_path: Pat
     assert first["config"] == again["config"] and "webGl:renderer" in first["config"]
     assert "fingerprint_preset" not in first and first["locale"] == "en-US"
     assert not any(k.startswith(("timezone", "locale:", "geolocation:")) for k in first["config"])
+
+
+async def test_a_block_forgets_the_saved_device_and_cookies(tmp_path: Path) -> None:
+    place = Place(ip="203.0.113.7", country="US", timezone="America/Chicago", locale="en-US")
+    cfg = dataclasses.replace(_config(tmp_path, "http://127.0.0.1:9"), fingerprint_preset=True, place=place)
+    fetcher = camoufox_backend.CamoufoxFetcher(cfg)
+    await fetcher._same_device(camoufox_backend.device_options(cfg, place))
+    assert fetcher._profile_path.exists()
+    fetcher.record_block("captcha")
+    assert not fetcher._profile_path.exists()
+    await fetcher.aclose()

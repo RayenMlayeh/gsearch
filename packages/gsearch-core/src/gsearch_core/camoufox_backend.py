@@ -426,8 +426,8 @@ class CamoufoxFetcher:
             evidence_ref: str | None = None
             if verdict.state in _BLOCKS:
                 evidence_ref = await self._save_evidence(verdict.state.value)
+                await self._close_session()
                 retry_after = self.record_block(verdict.state.value)
-                await self._close_session()  # the next session is a fresh device
             elif verdict.state in (PageState.JS_GATE, PageState.PARSE_DRIFT, PageState.CONSENT_WALL):
                 evidence_ref = await self._save_evidence(verdict.state.value)
             return FetchedPage(
@@ -442,9 +442,11 @@ class CamoufoxFetcher:
 
     # ------------------------------------------- shared with the hybrid fetcher
     def record_block(self, reason: str) -> int:
-        """Rest the identity after a block; returns retry_after_s."""
+        """Rest the identity and forget its device and cookies, so it comes back as a fresh device; returns
+        retry_after_s."""
         until = max(self._tomorrow_epoch(), self._wall() + 3600)
         self._state.record_captcha(self.config.identity, until, reason)
+        self._profile_path.unlink(missing_ok=True)
         return math.ceil(until - self._wall())
 
     def record_search(self) -> None:

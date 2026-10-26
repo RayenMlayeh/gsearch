@@ -204,7 +204,12 @@ class ProxyPool:
             page: FetchedPage | None = None
             for attempt in range(self.config.max_attempts):
                 last = attempt + 1 == self.config.max_attempts
-                member = await (self._fresh_exit() if self.rotating else self._next_static(tried))
+                try:
+                    member = await (self._fresh_exit() if self.rotating else self._next_static(tried))
+                except FetchError:
+                    if page is not None:
+                        return page
+                    raise
                 tried.add(member.key)
                 member.busy += 1
                 try:
