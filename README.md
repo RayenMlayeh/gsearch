@@ -268,7 +268,7 @@ gsearch search "query" [--page N] [--lang xx] [--country xx] [--time-range h|d|w
 gsearch search "query" --fixtures fixtures/gecko     answer from saved pages (offline, from a clone of this repo)
 gsearch parse page.html                              parse any saved Google results page
 gsearch schema                                       print the JSON Schema
-gsearch identity check                               check the browser's fingerprint matches its IP (no Google traffic)
+gsearch identity check                               home-IP browser's fingerprint matches its IP (no Google traffic)
 gsearch setup                                        download the browser once and print the MCP config
 ```
 

@@ -4,7 +4,7 @@
   gsearch search "query" [...]                     search Google (settings: GSEARCH_* in the environment
                                                    or .env, see gsearch_core.config)
   gsearch search "query" --fixtures DIR [...]      search saved pages (offline)
-  gsearch identity check [--headed]                launch the live identity's device against a local page and
+  gsearch identity check [--headed]                launch the home-IP device against a local page and
                                                    check it is coherent with its exit IP (no Google traffic)
   gsearch schema                                   print the output JSON schema
   gsearch setup                                    download the browser once and print the MCP client config
@@ -25,7 +25,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 from gsearch_core.client import SearchClient
-from gsearch_core.config import fetcher_from_env
+from gsearch_core.config import default_env, fetcher_from_env
 from gsearch_core.fetch import Fetcher, FixtureFetcher
 from gsearch_parse import PageState, parse_page
 from gsearch_parse.models import SearchError, SearchRequest, SearchResponse
@@ -88,6 +88,8 @@ def cmd_identity_check(args: argparse.Namespace) -> int:
     from gsearch_core.camoufox_backend import CamoufoxConfig
     from gsearch_core.probe import coherence, probe
 
+    if default_env().get("GSEARCH_PROXY", "").strip():
+        raise ValueError("identity check covers the home-IP identity only; unset GSEARCH_PROXY to run it")
     place, seen = asyncio.run(probe(replace(CamoufoxConfig(), headless=not args.headed)))
     checks = coherence(place, seen)
     _emit(
@@ -174,7 +176,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     ident = sub.add_parser("identity", help="identity tools")
     isub = ident.add_subparsers(dest="identity_command", required=True)
-    chk = isub.add_parser("check", help="fingerprint coherence of the live identity (no Google traffic)")
+    chk = isub.add_parser("check", help="fingerprint coherence of the home-IP identity (no Google traffic)")
     chk.add_argument("--headed", action="store_true", help="probe the headed browser instead of headless")
     chk.set_defaults(func=cmd_identity_check)
 

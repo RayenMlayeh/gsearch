@@ -42,3 +42,11 @@ def test_setup_points_clients_at_the_env_file(
     assert _config(out)["mcpServers"]["gsearch"]["env"] == {"GSEARCH_ENV_FILE": env_file}  # type: ignore[index]
     assert f"-e GSEARCH_ENV_FILE={env_file} --" in out
     assert "your own IP" not in out
+
+
+def test_identity_check_refuses_with_a_proxy(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("GSEARCH_PROXY", "gate.example.com:7000")
+    assert main(["identity", "check"]) == 2
+    assert "home-IP identity only" in capsys.readouterr().err
