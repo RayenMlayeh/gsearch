@@ -212,6 +212,16 @@ async def test_relay_adds_login_meters_and_persists(upstream: FakeUpstream, tmp_
     assert ByteMeter(tmp_path / "bytes.json").total == meter.total  # survives a restart
 
 
+def test_meters_in_two_processes_add_up(tmp_path: Path) -> None:
+    first, second = ByteMeter(tmp_path / "bytes.json"), ByteMeter(tmp_path / "bytes.json")
+    first.add(600)
+    second.add(600)
+    first.save()
+    second.save()
+    assert ByteMeter(tmp_path / "bytes.json").total == 1200
+    assert second.total == 1200
+
+
 async def test_relay_through_a_socks5_proxy(upstream: FakeUpstream) -> None:
     proxy = Upstream.parse(f"socks5://vps-user:{PASSWORD}@127.0.0.1:{upstream.socks_port}")
     relay = Relay(proxy, ByteMeter(), tag="t")

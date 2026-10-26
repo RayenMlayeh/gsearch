@@ -18,6 +18,7 @@ import contextlib
 import hashlib
 import json
 import logging
+import os
 import random
 import re
 import string
@@ -140,10 +141,14 @@ class ByteMeter:
     def __init__(self, path: Path | None = None, cap_bytes: int | None = None) -> None:
         self.path = path
         self.cap_bytes = cap_bytes
-        self.total = 0
+        self._unsaved = 0
         self._saved_at = 0.0
-        if path is not None and path.exists():
-            self.total = int(json.loads(path.read_text(encoding="utf-8")).get("total", 0))
+        self.total = self._read()
+
+    def _read(self) -> int:
+        if self.path is None or not self.path.exists():
+            return 0
+        return int(json.loads(self.path.read_text(encoding="utf-8")).get("total", 0))
 
     @property
     def exceeded(self) -> bool:
@@ -151,6 +156,7 @@ class ByteMeter:
 
     def add(self, n: int) -> None:
         self.total += n
+        self._unsaved += n
         if time.monotonic() - self._saved_at > 1.0:
             self.save()
 
@@ -158,10 +164,12 @@ class ByteMeter:
         if self.path is None:
             return
         self._saved_at = time.monotonic()
+        total = self._read() + self._unsaved
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps({"total": self.total}), encoding="utf-8")
+        tmp = self.path.with_suffix(f".{os.getpid()}.tmp")
+        tmp.write_text(json.dumps({"total": total}), encoding="utf-8")
         tmp.replace(self.path)
+        self.total, self._unsaved = total, 0
 
 
 class Relay:

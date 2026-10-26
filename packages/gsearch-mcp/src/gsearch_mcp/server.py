@@ -5,6 +5,8 @@ Settings: GSEARCH_* variables from the environment or a `.env` file (see gsearch
 
 from __future__ import annotations
 
+import contextlib
+from collections.abc import AsyncIterator
 from typing import Annotated, Literal
 
 from gsearch_core.client import SearchClient
@@ -61,7 +63,14 @@ def _summary(resp: SearchResponse) -> str:
 
 
 def build_server(client: SearchClient, *, live: bool) -> MCPServer:
-    server = MCPServer(name="gsearch", instructions=INSTRUCTIONS, version="0.1.0")
+    @contextlib.asynccontextmanager
+    async def close_on_exit(_server: MCPServer) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            await client.fetcher.aclose()
+
+    server = MCPServer(name="gsearch", instructions=INSTRUCTIONS, version="0.1.0", lifespan=close_on_exit)
 
     @server.tool(
         name="google_search",
