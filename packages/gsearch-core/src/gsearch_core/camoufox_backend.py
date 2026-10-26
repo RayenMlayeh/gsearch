@@ -521,16 +521,15 @@ class CamoufoxFetcher:
                 log.info("resolve_skipped_no_anchor href=%s", href[:80])
                 return None  # the link is not on the page (e.g. it came from a cached response)
         tab: Any = None
-        nav: Any = None
         try:
             tab = await self._open_in_background(anchor, href)
             if tab is None:
-                # Coherent fallback: a typed-URL navigation (Sec-Fetch-Site: none, no Referer), never a
-                # scripted navigation with a forged Referer.
-                tab = await self._context.new_page()
-                nav = asyncio.ensure_future(
-                    tab.goto(target, wait_until="commit", timeout=self.config.nav_timeout_ms)
+                # Fallback: one request with the session's cookies, reading the redirect without following
+                # it. A navigation would follow it to the destination, which route() cannot stop.
+                response = await self._context.request.get(
+                    target, max_redirects=0, timeout=self.config.resolve_timeout_s * 1000
                 )
+                return response.headers.get("location") or redirect_target(await response.text())
             return await asyncio.wait_for(location, timeout=self.config.resolve_timeout_s)
         except Exception as exc:  # timeout: report unresolved, never fail the search
             log.warning("resolve_failed href=%s error=%s: %s", href[:80], type(exc).__name__, str(exc)[:200])
@@ -539,9 +538,6 @@ class CamoufoxFetcher:
             if tab is not None:
                 with contextlib.suppress(Exception):
                     await tab.close()
-            if nav is not None:
-                with contextlib.suppress(Exception):  # the cancelled navigation is expected to fail
-                    await nav
 
     async def _open_in_background(self, anchor: Any, href: str) -> Any:
         """Middle-click the anchor (background tab). Retries once centred; None if it cannot be clicked.

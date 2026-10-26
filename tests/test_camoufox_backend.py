@@ -209,13 +209,16 @@ async def test_live_backend_against_local_fake_google(tmp_path: Path, fake_googl
         for r in resp.organic:
             assert r.url is not None
             assert str(r.url).startswith(f"{landing_base}/landing/FIXTURE_")
-        assert fetcher.status()["resolves_today"] == 8
+        links = len(resp.organic) + sum(len(b.links) for b in resp.answer_boxes)
+        assert fetcher.status()["resolves_today"] == links
         assert ASSET_HITS == []  # the destination site was never contacted (interstitial navigation aborted)
         # Real-click semantics: same-origin, user-activated navigation with the results page as
         # referrer; never the scripted "Sec-Fetch-Site: none + Referer" combination.
-        assert len(GOTO_HEADERS) == 8
-        assert all(h["path"].startswith("/url?sa=t") for h in GOTO_HEADERS)  # the rewritten form was followed
-        for h in GOTO_HEADERS:
+        assert len(GOTO_HEADERS) == links
+        clicked = [h for h in GOTO_HEADERS if h["path"].startswith("/url?sa=t")]
+        assert len(clicked) >= len(resp.organic)
+        assert all("referer" not in h for h in GOTO_HEADERS if h not in clicked)
+        for h in clicked:
             assert h.get("sec-fetch-site") == "same-origin", h
             assert h.get("sec-fetch-mode") == "navigate"
             assert h.get("sec-fetch-user") == "?1"
