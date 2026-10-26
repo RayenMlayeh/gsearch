@@ -5,6 +5,8 @@
 - Locale and geolocation come from the exit IP, so the device matches where it connects from.
 - Result links are resolved by real clicks in the same session, read from the redirect.
 - Budget, daily cap and CAPTCHA rest are checked before any browser work and persist across restarts.
+- A lasting identity (home IP, fixed proxy) keeps one device and its Google cookies across launches, like a
+  person's own Firefox; only the place (timezone, language, geolocation) follows the exit IP.
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import hashlib
+import json
 import logging
 import math
 import os
@@ -29,6 +32,7 @@ from urllib.parse import parse_qs, quote_plus, urlsplit
 from browserforge.fingerprints import Screen
 from camoufox.addons import DefaultAddons
 from camoufox.async_api import AsyncCamoufox
+from camoufox.utils import launch_options
 from gsearch_parse.classify import classify
 from gsearch_parse.models import PageState, SearchRequest
 from gsearch_parse.redirect import redirect_target
@@ -52,6 +56,7 @@ CLICK_TIMEOUT_MS = 5_000
 ADDRESS_BAR_SEARCH = "{base}/search?client=firefox-b-d&q={q}"
 _WINDOWS = ((1536, 864), (1920, 1080), (1440, 900), (1366, 768))
 _BLOCKS = (PageState.CAPTCHA, PageState.HARD_BLOCK)
+_PLACE_KEYS = ("geolocation:", "locale:", "timezone", "humanize")
 # Google's EU consent dialog links to consent.google.com; its continue URL carries Google's own view of the
 # visitor's country, which can differ from what IP databases say about the exit.
 _CONSENT = re.compile(
@@ -108,6 +113,15 @@ def device_options(cfg: CamoufoxConfig, place: Place | None) -> dict[str, Any]:
     return options
 
 
+def device_config(options: dict[str, Any]) -> dict[str, Any]:
+    """The device Camoufox draws for these launch options (hardware, screen, WebGL, fonts, voices, noise
+    seeds), without the place, which follows the exit IP on every launch."""
+    env = launch_options(**{**options, "headless": options["headless"] is True})["env"]
+    chunks = sorted((int(k.rsplit("_", 1)[1]), v) for k, v in env.items() if k.startswith("CAMOU_CONFIG_"))
+    config: dict[str, Any] = json.loads("".join(v for _, v in chunks))
+    return {k: v for k, v in config.items() if not k.startswith(_PLACE_KEYS)}
+
+
 def window_for(identity: str) -> tuple[int, int]:
     """Browser window size, stable per identity name."""
     digest = hashlib.blake2b(identity.encode(), digest_size=2).digest()
@@ -140,6 +154,9 @@ class CamoufoxConfig:
     # the query into Firefox's address bar, the usual way Firefox users search; no homepage load).
     entry: str = "homepage"
     fingerprint_preset: bool = False  # real-device fingerprints bundled with Camoufox instead of synthetic
+    persist_profile: bool = (
+        True  # same device and Google cookies across launches; off for one-shot identities
+    )
 
 
 class CamoufoxFetcher:
@@ -205,6 +222,37 @@ class CamoufoxFetcher:
                 retry_after_s=math.ceil(wait),
             )
 
+    # ----------------------------------------------------------------- profile
+    @property
+    def _profile_path(self) -> Path:
+        return self.config.state_path.parent / "profiles" / f"{self.config.identity}.json"
+
+    def _profile(self) -> dict[str, Any]:
+        try:
+            profile: dict[str, Any] = json.loads(self._profile_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+        return profile
+
+    def _save_profile(self, profile: dict[str, Any]) -> None:
+        self._profile_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self._profile_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(profile), encoding="utf-8")
+        tmp.replace(self._profile_path)
+
+    async def _same_device(self, options: dict[str, Any]) -> dict[str, Any]:
+        """Launch options for the identity's saved device; the first launch draws it and saves it."""
+        profile = self._profile()
+        if "device" not in profile:
+            profile["device"] = await asyncio.to_thread(device_config, options)
+            self._save_profile(profile)
+        options = {k: v for k, v in options.items() if k not in ("fingerprint_preset", "screen")}
+        return options | {
+            "config": profile["device"],
+            "window": window_for(self.config.identity),
+            "i_know_what_im_doing": True,
+        }
+
     # ----------------------------------------------------------------- session
     async def _ensure_session(self, hl_hint: str | None) -> None:
         idle = time.monotonic() - self._last_used
@@ -216,6 +264,8 @@ class CamoufoxFetcher:
         self._place = place
         browser = await self._launch(cfg, place)
         self._context = await browser.new_context()
+        if cfg.persist_profile and (cookies := self._profile().get("cookies")):
+            await self._context.add_cookies([c for c in cookies if c.get("expires", -1) > self._wall()])
         self._page = await self._context.new_page()
         self._page.on("response", self._on_response)
         self._page.on("request", self._on_request)
@@ -238,8 +288,11 @@ class CamoufoxFetcher:
         """Start the browser. A real-device preset can name a GPU that Camoufox has no WebGL data for
         (observed: Intel Arc A750); that preset is skipped and another one drawn."""
         for attempt in range(3):
-            self._camoufox = AsyncCamoufox(**device_options(cfg, place))  # type: ignore[no-untyped-call]
             try:
+                options = device_options(cfg, place)
+                if cfg.persist_profile:
+                    options = await self._same_device(options)
+                self._camoufox = AsyncCamoufox(**options)  # type: ignore[no-untyped-call]
                 return await self._camoufox.__aenter__()
             except ValueError as exc:
                 if not cfg.fingerprint_preset or "WebGL" not in str(exc) or attempt == 2:
@@ -280,6 +333,10 @@ class CamoufoxFetcher:
 
     async def _close_session(self) -> None:
         if self._context is not None:
+            if self.config.persist_profile:
+                # shortcut: cookies the HTTP tier gets after adoption are not saved; Google's are long-lived.
+                with contextlib.suppress(Exception):  # a lost cookie save must not mask the real error
+                    self._save_profile({**self._profile(), "cookies": await self._context.cookies()})
             with contextlib.suppress(Exception):  # teardown must not mask the real error
                 await self._context.close()
         if self._camoufox is not None:

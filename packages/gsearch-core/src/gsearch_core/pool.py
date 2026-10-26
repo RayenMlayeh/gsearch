@@ -115,7 +115,13 @@ class ProxyPool:
             log.info("pool_exit_rejected proxy=%s ip=%s country=%s", upstream.key, place.ip, place.country)
             await relay.close()
             return None
-        cfg = replace(self.config.browser, identity=f"proxy-{upstream.key}", proxy_url=url, place=place)
+        cfg = replace(
+            self.config.browser,
+            identity=f"proxy-{upstream.key}",
+            proxy_url=url,
+            place=place,
+            persist_profile=not self.rotating,
+        )
         member = Member(upstream.key, relay, self._make(cfg))
         self._members[member.key] = member
         self.stats["spawned"] += 1
