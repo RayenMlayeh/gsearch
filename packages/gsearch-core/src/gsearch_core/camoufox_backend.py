@@ -35,7 +35,7 @@ from gsearch_parse.redirect import redirect_target
 
 from .fetch import FetchedPage, FetchError, build_search_url
 from .geo import Place, locate_exit
-from .pacing import PacingPolicy, TokenBucket, lognormal_between
+from .pacing import PacingPolicy, lognormal_between
 from .state import StateStore
 
 log = logging.getLogger(__name__)
@@ -150,14 +150,11 @@ class CamoufoxFetcher:
         config: CamoufoxConfig,
         *,
         wall_clock: Callable[[], float] = time.time,
-        monotonic: Callable[[], float] = time.monotonic,
         rng: random.Random | None = None,
     ) -> None:
         self.config = config
         self._wall = wall_clock
         self._rng = rng or random.Random()  # nosec B311 - pacing jitter, not security
-        p = config.policy
-        self._bucket = TokenBucket(p.searches_per_hour / 3600.0, p.burst, monotonic)
         self._state = StateStore(config.state_path, wall_clock)
         self._lock = asyncio.Lock()
         self._camoufox: Any = None
@@ -175,6 +172,10 @@ class CamoufoxFetcher:
         """Local midnight after now."""
         tomorrow = datetime.fromtimestamp(self._wall()) + timedelta(days=1)
         return tomorrow.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+
+    def _hourly_wait_s(self) -> float:
+        p = self.config.policy
+        return self._state.token_wait_s(self.config.identity, p.searches_per_hour / 3600.0, p.burst)
 
     async def admit(self) -> None:
         """Refuse before any browser work when the identity has no budget. Raises FetchError."""
@@ -195,7 +196,7 @@ class CamoufoxFetcher:
                 retryable=True,
                 retry_after_s=math.ceil(self._tomorrow_epoch() - self._wall()),
             )
-        wait = self._bucket.wait_s()
+        wait = self._state.take_token(ident, policy.searches_per_hour / 3600.0, policy.burst)
         if wait > 0:
             raise FetchError(
                 "rate_limited",
@@ -203,7 +204,6 @@ class CamoufoxFetcher:
                 retryable=True,
                 retry_after_s=math.ceil(wait),
             )
-        self._bucket.take()  # the token is spent on admission, even if the search later fails
 
     # ----------------------------------------------------------------- session
     async def _ensure_session(self, hl_hint: str | None) -> None:
@@ -407,7 +407,7 @@ class CamoufoxFetcher:
             return max(0.0, resting[0] - self._wall())
         if self._state.searches_today(ident) >= self.config.policy.searches_per_day:
             return self._tomorrow_epoch() - self._wall()
-        return self._bucket.wait_s()
+        return self._hourly_wait_s()
 
     async def close_session(self) -> None:
         """Close the browser but keep the identity's budget and state."""
@@ -580,5 +580,5 @@ class CamoufoxFetcher:
             "resolves_today": today["resolves"],
             "captchas_today": today["captchas"],
             "resting_until_epoch": resting[0] if resting else None,
-            "hourly_wait_s": round(self._bucket.wait_s(), 1),
+            "hourly_wait_s": round(self._hourly_wait_s(), 1),
         }

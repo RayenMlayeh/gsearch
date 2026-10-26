@@ -1,4 +1,4 @@
-"""Durable per-identity state (SQLite): daily search counts and CAPTCHA rest periods.
+"""Durable per-identity state (SQLite): hourly budget, daily search counts and CAPTCHA rest periods.
 
 Survives restarts, so restarting the MCP server cannot reset the home IP's daily budget or a rest period.
 """
@@ -24,6 +24,11 @@ CREATE TABLE IF NOT EXISTS identity_rest (
     identity TEXT PRIMARY KEY,
     until_epoch REAL NOT NULL,
     reason TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS identity_bucket (
+    identity TEXT PRIMARY KEY,
+    tokens REAL NOT NULL,
+    at_epoch REAL NOT NULL
 );
 """
 
@@ -76,6 +81,32 @@ class StateStore:
         ).fetchone()
         searches, resolves, captchas = row if row else (0, 0, 0)
         return {"searches": int(searches), "resolves": int(resolves), "captchas": int(captchas)}
+
+    def _tokens(self, identity: str, rate_per_s: float, capacity: float) -> float:
+        row = self._db.execute(
+            "SELECT tokens, at_epoch FROM identity_bucket WHERE identity = ?", (identity,)
+        ).fetchone()
+        if row is None:
+            return capacity
+        return min(capacity, float(row[0]) + max(0.0, self._clock() - float(row[1])) * rate_per_s)
+
+    def token_wait_s(self, identity: str, rate_per_s: float, capacity: float) -> float:
+        tokens = self._tokens(identity, rate_per_s, capacity)
+        return 0.0 if tokens >= 1 else (1 - tokens) / rate_per_s
+
+    def take_token(self, identity: str, rate_per_s: float, capacity: float) -> float:
+        self._db.execute("BEGIN IMMEDIATE")
+        try:
+            tokens = self._tokens(identity, rate_per_s, capacity)
+            if tokens < 1:
+                return (1 - tokens) / rate_per_s
+            self._db.execute(
+                "INSERT OR REPLACE INTO identity_bucket (identity, tokens, at_epoch) VALUES (?, ?, ?)",
+                (identity, tokens - 1, self._clock()),
+            )
+            return 0.0
+        finally:
+            self._db.execute("COMMIT")
 
     def resting_until(self, identity: str) -> tuple[float, str] | None:
         """(until_epoch, reason) if the identity is resting now, else None."""

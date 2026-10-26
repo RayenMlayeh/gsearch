@@ -6,7 +6,7 @@ import random
 from pathlib import Path
 
 import pytest
-from gsearch_core.pacing import PacingPolicy, TokenBucket, lognormal_between
+from gsearch_core.pacing import PacingPolicy, lognormal_between
 from gsearch_core.state import StateStore
 
 
@@ -18,25 +18,20 @@ class FakeClock:
         return self.t
 
 
-def test_token_bucket_burst_then_refill() -> None:
-    clock = FakeClock(0.0)
-    bucket = TokenBucket(rate_per_s=20 / 3600, capacity=2, clock=clock)
-    bucket.take()
-    bucket.take()
-    assert bucket.wait_s() == pytest.approx(180.0)  # 20/hour -> one token every 180 s
+def test_hourly_tokens_burst_refill_and_are_shared(tmp_path: Path) -> None:
+    clock = FakeClock()
+    rate = 20 / 3600
+    first = StateStore(tmp_path / "s.sqlite", clock)
+    second = StateStore(tmp_path / "s.sqlite", clock)  # e.g. a second MCP server on the same machine
+    assert first.take_token("home", rate, 2) == 0.0
+    assert second.take_token("home", rate, 2) == 0.0
+    assert first.take_token("home", rate, 2) == pytest.approx(180.0)  # 20/hour -> one token every 180 s
     clock.t += 90
-    assert bucket.wait_s() == pytest.approx(90.0)
+    assert second.token_wait_s("home", rate, 2) == pytest.approx(90.0)
     clock.t += 90
-    assert bucket.wait_s() == 0.0
-    with pytest.raises(ValueError, match="rate must be"):
-        TokenBucket(rate_per_s=0, capacity=1, clock=clock)
-
-
-def test_take_without_token_is_a_bug() -> None:
-    bucket = TokenBucket(rate_per_s=1.0, capacity=1, clock=FakeClock(0.0))
-    bucket.take()
-    with pytest.raises(RuntimeError, match="without an available token"):
-        bucket.take()
+    assert second.take_token("home", rate, 2) == 0.0
+    first.close()
+    second.close()
 
 
 def test_lognormal_delay_stays_in_window() -> None:

@@ -184,8 +184,10 @@ async def test_block_just_before_midnight_still_rests_an_hour(tmp_path: Path) ->
 
 async def test_hourly_budget_refuses_instead_of_blocking(tmp_path: Path) -> None:
     cfg = _config(tmp_path, "http://127.0.0.1:9", searches_per_hour=1.0, burst=1.0)
+    other = StateStore(cfg.state_path)  # type: ignore[attr-defined]
+    other.take_token("test-identity", 1 / 3600, 1.0)  # another process spends the only token
+    other.close()
     fetcher = camoufox_backend.CamoufoxFetcher(cfg)
-    fetcher._bucket.take()  # spend the only token
     result = await SearchClient(fetcher).search(SearchRequest(query="anything"))
     assert isinstance(result, SearchError)
     assert result.code == "rate_limited"
