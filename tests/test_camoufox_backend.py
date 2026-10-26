@@ -13,6 +13,7 @@ from collections.abc import Iterator
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -21,6 +22,7 @@ from gsearch_parse.models import SearchError, SearchRequest, SearchResponse
 
 camoufox_backend = pytest.importorskip("gsearch_core.camoufox_backend")
 from gsearch_core.client import SearchClient  # noqa: E402
+from gsearch_core.fetch import FetchError  # noqa: E402
 from gsearch_core.geo import Place  # noqa: E402
 from gsearch_core.pacing import PacingPolicy  # noqa: E402
 from gsearch_core.state import StateStore  # noqa: E402
@@ -292,3 +294,22 @@ async def test_a_block_forgets_the_saved_device_and_cookies(tmp_path: Path) -> N
     fetcher.record_block("captcha")
     assert not fetcher._profile_path.exists()
     await fetcher.aclose()
+
+
+async def test_behind_a_proxy_a_rest_belongs_to_the_exit_ip(tmp_path: Path) -> None:
+    def fetcher(ip: str) -> Any:
+        place = Place(ip=ip, country="US", timezone="America/Chicago", locale="en-US")
+        cfg = dataclasses.replace(
+            _config(tmp_path, "http://127.0.0.1:9"), proxy_url="http://127.0.0.1:1", place=place
+        )
+        return camoufox_backend.CamoufoxFetcher(cfg)
+
+    blocked = fetcher("203.0.113.7")
+    blocked.record_block("captcha")
+    await blocked.aclose()
+    same, new = fetcher("203.0.113.7"), fetcher("203.0.113.8")
+    with pytest.raises(FetchError, match="resting"):
+        await same.admit()
+    await new.admit()
+    await same.aclose()
+    await new.aclose()

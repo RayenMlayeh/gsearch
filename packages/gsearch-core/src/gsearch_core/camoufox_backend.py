@@ -190,6 +190,15 @@ class CamoufoxFetcher:
         tomorrow = datetime.fromtimestamp(self._wall()) + timedelta(days=1)
         return tomorrow.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
 
+    @property
+    def _rest_key(self) -> str:
+        """Behind a proxy a rest belongs to the exit IP, so a login whose IP changes is not held back by the
+        old one; the home IP is the identity itself."""
+        place = self.config.place
+        return (
+            f"{self.config.identity}@{place.ip}" if self.config.proxy_url and place else self.config.identity
+        )
+
     def _hourly_wait_s(self) -> float:
         p = self.config.policy
         return self._state.token_wait_s(self.config.identity, p.searches_per_hour / 3600.0, p.burst)
@@ -197,7 +206,7 @@ class CamoufoxFetcher:
     async def admit(self) -> None:
         """Refuse before any browser work when the identity has no budget. Raises FetchError."""
         ident, policy = self.config.identity, self.config.policy
-        resting = self._state.resting_until(ident)
+        resting = self._state.resting_until(self._rest_key)
         if resting is not None:
             until, reason = resting
             raise FetchError(
@@ -445,7 +454,7 @@ class CamoufoxFetcher:
         """Rest the identity and forget its device and cookies, so it comes back as a fresh device; returns
         retry_after_s."""
         until = max(self._tomorrow_epoch(), self._wall() + 3600)
-        self._state.record_captcha(self.config.identity, until, reason)
+        self._state.record_captcha(self._rest_key, until, reason)
         self._profile_path.unlink(missing_ok=True)
         return math.ceil(until - self._wall())
 
@@ -461,7 +470,7 @@ class CamoufoxFetcher:
     def ready_in_s(self) -> float:
         """Seconds until admit() lets a search through: rest, daily cap or hourly budget (0 = now)."""
         ident = self.config.identity
-        resting = self._state.resting_until(ident)
+        resting = self._state.resting_until(self._rest_key)
         if resting is not None:
             return max(0.0, resting[0] - self._wall())
         if self._state.searches_today(ident) >= self.config.policy.searches_per_day:
@@ -622,7 +631,7 @@ class CamoufoxFetcher:
     def status(self) -> dict[str, str | int | float | bool | None]:
         ident, p = self.config.identity, self.config.policy
         today = self._state.today(ident)
-        resting = self._state.resting_until(ident)
+        resting = self._state.resting_until(self._rest_key)
         return {
             "identity": ident,
             "session_open": self._page is not None,

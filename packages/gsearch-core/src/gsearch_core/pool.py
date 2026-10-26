@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 PARALLEL = 3  # rotating proxies: browsers at once
 LEASE_S = 60.0  # a member that just served a page keeps it until its links are resolved, at most this long
 SPAWN_DRAWS = 4  # fresh exits tried before giving up (dead or wrong-country exits)
-DEAD_S = 600.0  # a static proxy that failed its location check is skipped this long
+DEAD_S = 600.0  # a static proxy that failed its location check, or is resting, is looked at again after this
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,14 +158,20 @@ class ProxyPool:
             fallback: Member | None = None
             for i in range(len(proxies)):
                 upstream = proxies[(start + i) % len(proxies)]
-                if upstream.key in exclude or self._dead_until.get(upstream.key, 0.0) > time.monotonic():
+                dead_for = self._dead_until.get(upstream.key, 0.0) - time.monotonic()
+                if upstream.key in exclude or dead_for > 0:
+                    waits += [dead_for] if dead_for > 0 else []
                     continue
                 member = self._members.get(upstream.key) or await self._spawn(upstream)
                 if member is None:
                     self._dead_until[upstream.key] = time.monotonic() + DEAD_S
                     continue
                 wait = member.fetcher.browser.ready_in_s()
-                if wait > 0:
+                if wait > DEAD_S:
+                    await self._retire(member, "resting")
+                    self._dead_until[upstream.key] = time.monotonic() + DEAD_S
+                    waits.append(DEAD_S)
+                elif wait > 0:
                     waits.append(wait)
                 elif not member.busy:
                     return member

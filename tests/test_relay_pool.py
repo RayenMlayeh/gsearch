@@ -448,6 +448,21 @@ async def test_a_block_on_the_only_static_proxy_is_reported_as_the_block(pool_fa
         await pool.aclose()
 
 
+async def test_a_resting_static_proxy_is_looked_at_again_for_a_new_ip(pool_factory: Any) -> None:
+    proxy = parse_proxies("u:p@10.0.0.1:3128")
+    pool = pool_factory(proxies=proxy)
+    try:
+        await pool.fetch(SearchRequest(query="block me"))
+        with pytest.raises(FetchError) as err:
+            await pool.fetch(SearchRequest(query="too soon"))
+        assert err.value.retry_after_s == 600 and pool._members == {}
+        pool._dead_until[proxy[0].key] = 0.0
+        await pool.fetch(SearchRequest(query="new ip"))
+        assert FakeHybrid.instances[-1].fetched == ["new ip"]
+    finally:
+        await pool.aclose()
+
+
 async def test_pool_refuses_when_data_limit_used(pool_factory: Any, tmp_path: Path) -> None:
     (tmp_path / "bytes.json").write_text(json.dumps({"total": 2_000_000}), encoding="utf-8")
     pool = pool_factory(byte_cap_bytes=1_000_000)
