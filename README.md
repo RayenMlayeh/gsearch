@@ -343,8 +343,8 @@ use the CLI or call it from Python.
   that solving its SearchGuard JavaScript challenge by automated means is circumvention under DMCA §1201.
   gsearch runs that challenge in a real browser and does not forge or alter tokens, but the complaint also
   targets automated browsers. See [docs/DESIGN.md](docs/DESIGN.md) (D-004).
-- **No CAPTCHA solver is shipped, wired in or recommended.** `gsearch_core.captcha` defines an interface only;
-  anything you plug into it, and its legality, is your responsibility.
+- **No CAPTCHA solver is shipped, wired in or recommended.** A CAPTCHA rests the identity and is reported as an
+  error.
 - **Get legal advice** for your jurisdiction and use case before running live searches. The parser
   (`gsearch_parse`) only reads HTML you already have.
 - **Limits are on by default and cannot be bypassed from the CLI or MCP.** Don't use proxies to hammer

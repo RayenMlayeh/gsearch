@@ -61,7 +61,7 @@ Numbered so the findings can cite them.
 - **D-004 No token forging; no CAPTCHA solving shipped.** Results need a cookie that Google's obfuscated
   JavaScript VM computes (F-0002). Rebuilding that VM is the conduct at issue in *Google v. SerpApi*
   (N.D. Cal., filed 2025-12-19), so the project never generates or alters a token: a real browser runs the
-  page as is. `gsearch_core.captcha` is an interface only, and no solver is shipped, wired in or recommended.
+  page as is. No CAPTCHA solver is shipped, wired in or recommended.
 - **D-005 Errors are data.** A block is returned as a `SearchError` with `code` and `retry_after_s`, never
   as an empty list, and page layout changes surface as `parse_drift` instead of "0 results".
 - **D-006 Gecko fixtures are the test base.** The parser is tested against minimized, scrubbed captures from
