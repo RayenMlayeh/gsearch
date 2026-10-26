@@ -3,7 +3,6 @@
 GSEARCH_PROXY          one or more proxies in any common format, or the path of a file listing them.
                        Unset: searches go out from this machine's own IP.
 GSEARCH_DATA_LIMIT_MB  stop all proxy traffic at this many MB, counted across runs (default: no limit)
-GSEARCH_HEADLESS       1: no browser window behind proxies either (default: a visible window behind proxies)
 GSEARCH_ENV_FILE       absolute path of the settings file (default: .env in the working directory)
 GSEARCH_FIXTURES_DIR   answer from saved pages instead of Google (demos and tests)
 GSEARCH_STATE_DIR      budgets, data meter and evidence (default %LOCALAPPDATA%\\gsearch or
@@ -71,7 +70,7 @@ def fetcher_from_env(env: Mapping[str, str] | None = None) -> tuple[Fetcher, boo
     # Behind proxies: a visible browser (headless sessions drew far more CAPTCHAs on residential exits),
     # queries typed into the address bar, real-device fingerprints.
     browser = CamoufoxConfig(
-        headless=env.get("GSEARCH_HEADLESS") == "1",
+        headless=False,
         entry="address_bar",
         fingerprint_preset=True,
         state_path=state / "state.sqlite",
