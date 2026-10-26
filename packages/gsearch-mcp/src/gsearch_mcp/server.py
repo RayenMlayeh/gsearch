@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import contextlib
 from collections.abc import AsyncIterator
+from importlib.metadata import version
 from typing import Annotated, Literal
 
 from gsearch_core.client import SearchClient
@@ -70,7 +71,9 @@ def build_server(client: SearchClient, *, live: bool) -> MCPServer:
         finally:
             await client.fetcher.aclose()
 
-    server = MCPServer(name="gsearch", instructions=INSTRUCTIONS, version="0.1.0", lifespan=close_on_exit)
+    server = MCPServer(
+        name="gsearch", instructions=INSTRUCTIONS, version=version("gsearch-agent"), lifespan=close_on_exit
+    )
 
     @server.tool(
         name="google_search",
