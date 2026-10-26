@@ -10,6 +10,7 @@ import os
 import threading
 import time
 from collections.abc import Iterator
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -170,6 +171,14 @@ async def test_daily_cap_is_refused_before_any_browser_work(tmp_path: Path) -> N
     assert isinstance(result, SearchError)
     assert result.code == "rate_limited"
     assert result.retry_after_s is not None and result.retry_after_s > 0
+    await fetcher.aclose()
+
+
+async def test_block_just_before_midnight_still_rests_an_hour(tmp_path: Path) -> None:
+    late = datetime.now().replace(hour=23, minute=58).timestamp()
+    cfg = _config(tmp_path, "http://127.0.0.1:9")
+    fetcher = camoufox_backend.CamoufoxFetcher(cfg, wall_clock=lambda: late)
+    assert fetcher.record_block("captcha") == 3600
     await fetcher.aclose()
 
 

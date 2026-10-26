@@ -386,7 +386,7 @@ class CamoufoxFetcher:
     # ------------------------------------------- shared with the hybrid fetcher
     def record_block(self, reason: str) -> int:
         """Rest the identity after a block; returns retry_after_s."""
-        until = self._tomorrow_epoch()
+        until = max(self._tomorrow_epoch(), self._wall() + 3600)
         self._state.record_captcha(self.config.identity, until, reason)
         return math.ceil(until - self._wall())
 
