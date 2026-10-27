@@ -41,6 +41,12 @@ HOME = (
     "<html><body><form action='/search' method='get'><textarea name='q'></textarea>"
     "<input type='hidden' name='hl' value='en'></form>" + SUBMIT_ON_ENTER + "</body></html>"
 )
+# Google's consent dialog, reduced to what the backend reads: Google's country guess and "Reject all".
+CONSENT = (
+    "<html><body><div role='dialog'><a href='https://consent.google.com/d?continue=https://www.google.com/"
+    "&amp;gl=US&amp;m=0'>More options</a><button id='W0wltc' onclick=\"document.cookie='SOCS=rejected;"
+    " path=/'; location.reload()\">Reject all</button></div></body></html>"
+)
 
 
 def _serve(handler: type[BaseHTTPRequestHandler]) -> ThreadingHTTPServer:
@@ -99,6 +105,12 @@ def fake_google() -> Iterator[tuple[str, str]]:
                 self._send(200, HOME)
             elif parts.path == "/search" and q.get("q", [""])[0].startswith("trigger captcha"):
                 self._send(302, location="/sorry/index?continue=/search")
+            elif (
+                parts.path == "/search"
+                and "consent" in q.get("q", [""])[0]
+                and "SOCS=" not in str(self.headers.get("Cookie"))
+            ):
+                self._send(200, CONSENT)
             elif parts.path == "/sorry/index":
                 self._send(429, sorry)
             elif parts.path == "/search":
@@ -267,6 +279,33 @@ async def test_address_bar_entry_searches_like_a_typed_firefox_query(
         assert first["path"] == "/search?client=firefox-b-d&q=what+is+asyncio+in+python", PAGE_HITS
         assert first.get("sec-fetch-site") == "none" and "referer" not in first
         assert not any(h["path"] == "/" or h["path"].startswith("/?") for h in PAGE_HITS)
+    finally:
+        await fetcher.aclose()
+
+
+@pytest.mark.skipif(os.environ.get("GSEARCH_SKIP_BROWSER") == "1", reason="GSEARCH_SKIP_BROWSER=1")
+async def test_consent_dialog_is_rejected_unless_google_places_the_exit_elsewhere(
+    tmp_path: Path, fake_google: tuple[str, str]
+) -> None:
+    base_url, _ = fake_google
+    cfg = dataclasses.replace(_config(tmp_path, base_url), entry="address_bar")  # type: ignore[type-var]
+    fetcher = camoufox_backend.CamoufoxFetcher(cfg)
+    try:
+        resp = await SearchClient(fetcher).search(SearchRequest(query="consent then results"))
+        assert isinstance(resp, SearchResponse), resp
+        assert len(resp.organic) == 8
+    finally:
+        await fetcher.aclose()
+
+    elsewhere = Place(ip="127.0.0.1", country="FR", timezone="Europe/Paris", locale="fr-FR")
+    fetcher = camoufox_backend.CamoufoxFetcher(
+        dataclasses.replace(cfg, identity="fr-exit", place=elsewhere, persist_profile=False)
+    )
+    try:
+        with pytest.raises(FetchError) as refused:
+            await fetcher.fetch(SearchRequest(query="consent again"))
+        assert refused.value.code == "consent_wall"
+        assert "places the exit in US, not FR" in str(refused.value)
     finally:
         await fetcher.aclose()
 

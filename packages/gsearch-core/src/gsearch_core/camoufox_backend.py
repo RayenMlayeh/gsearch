@@ -51,6 +51,7 @@ RESULTS_READY_JS = (
     " || !!document.querySelector('form#captcha-form')"
 )
 CLICK_TIMEOUT_MS = 5_000
+REJECT_ALL = "#W0wltc"  # "Reject all" in Google's consent dialog, same id in every language
 # What Firefox on Windows sends when a query is typed into the address bar with Google as search engine:
 # a typed navigation (Sec-Fetch-Site: none, no Referer), with no homepage visit before it.
 ADDRESS_BAR_SEARCH = "{base}/search?client=firefox-b-d&q={q}"
@@ -289,7 +290,7 @@ class CamoufoxFetcher:
             wait_until="domcontentloaded",
             timeout=cfg.nav_timeout_ms,
         )
-        await self._refuse_consent_region()
+        await self._pass_consent()
         await self._settle()
         await asyncio.sleep(lognormal_between(self._rng, 1.5, 4.0))
 
@@ -309,19 +310,32 @@ class CamoufoxFetcher:
                 log.info("preset_redrawn reason=%s", str(exc)[:120])
         raise AssertionError("unreachable")
 
-    async def _refuse_consent_region(self) -> None:
-        """Raise consent_wall when Google serves its consent dialog: Google places this exit in a consent
-        region, so the identity cannot serve its market. Checked before the session spends its bytes; the
-        pool draws another exit."""
+    async def _pass_consent(self) -> None:
+        """Google's EU/UK consent dialog: click "Reject all", as a visitor there does; the saved profile keeps
+        the choice. Raise consent_wall when Google places the exit in another country than its IP lookup
+        (wrong market: the pool draws another exit) or when the dialog cannot be answered."""
         gl = consent_country(await self._page.content())
-        if gl is not None or "consent.google." in self._page.url:
-            await self._close_session()
-            raise FetchError(
-                "consent_wall",
-                f"Google served its consent dialog (Google places the exit in {gl or 'a consent region'})",
-                retryable=True,
-                retry_after_s=0,
-            )
+        if gl is None and "consent.google." not in self._page.url:
+            return
+        place = self._place
+        if gl and place and ("GB" if gl == "UK" else gl) != place.country:
+            reason = f"Google places the exit in {gl}, not {place.country}"
+        else:
+            try:
+                reject = self._page.locator(REJECT_ALL)
+                await reject.click(timeout=CLICK_TIMEOUT_MS)
+                await reject.wait_for(state="hidden", timeout=self.config.nav_timeout_ms)
+                await self._settle()
+                return
+            except Exception:  # Google changed its dialog: refuse the exit, as before consent support
+                reason = "its dialog could not be answered"
+        await self._close_session()
+        raise FetchError(
+            "consent_wall",
+            f"Google served its consent dialog ({reason})",
+            retryable=True,
+            retry_after_s=0,
+        )
 
     async def _settle(self) -> None:
         """Give the page time to finish loading, without making that a failure. Through a residential exit
@@ -371,7 +385,7 @@ class CamoufoxFetcher:
         if typed and not self._needs_url_navigation(req):
             url = ADDRESS_BAR_SEARCH.format(base=cfg.base_url, q=quote_plus(req.effective_query()))
             await page.goto(url, wait_until="domcontentloaded", timeout=cfg.nav_timeout_ms)
-            await self._refuse_consent_region()
+            await self._pass_consent()
         elif self._needs_url_navigation(req):
             url = build_search_url(req.model_copy(update={"lang": req.lang or self._session_hl}))
             url = url.replace(GOOGLE_ORIGIN, cfg.base_url, 1)

@@ -37,8 +37,9 @@ A live search with a rotating proxy:
 3. Camoufox launches with a real-device fingerprint preset, the exit's locale and geolocation, and WebRTC
    blocked, in a visible window (a virtual display on a Linux server). It types the query into Firefox's
    address bar: no homepage visit, no Referer.
-4. If Google shows its EU consent dialog, the exit is dropped. On a CAPTCHA, the exit is retired and the
-   search retried on a fresh one, up to 4 exits.
+4. If Google shows its EU/UK consent dialog, Camoufox clicks "Reject all" and the profile keeps that
+   choice. If Google places the exit in another country than its IP, the exit is dropped. On a CAPTCHA,
+   the exit is retired and the search retried on a fresh one, up to 4 exits.
 5. On results, the session's cookies and headers move to `curl_cffi` (same relay, same exit, matching TLS
    ClientHello), which resolves every `/goto` link from its redirect without loading the destination.
 6. Everything for that exit is closed. The next search starts again at step 1.
