@@ -144,10 +144,17 @@ class SearchClient:
 
     async def fetch_page(self, url: str) -> PageContent | SearchError:
         try:
-            if isinstance(self.fetcher, PageProxy):
+            if not isinstance(self.fetcher, PageProxy):
+                return await fetch_page(url)
+            proxy = await self.fetcher.page_proxy()
+            try:
+                return await fetch_page(url, proxy=proxy, google_only=self.fetcher.pages_direct)
+            except FetchError as exc:
+                if not exc.retryable:
+                    raise
+                await self.fetcher.drop_page_proxy(proxy)  # its exit may be gone: once more on a new one
                 proxy = await self.fetcher.page_proxy()
                 return await fetch_page(url, proxy=proxy, google_only=self.fetcher.pages_direct)
-            return await fetch_page(url)
         except FetchError as exc:
             return self._fetch_error(exc)
 

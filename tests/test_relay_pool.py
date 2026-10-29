@@ -14,6 +14,7 @@ import re
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import pytest
 from gsearch_core.fetch import FetchedPage, FetchError
@@ -117,10 +118,16 @@ def account(port: int, password: str = PASSWORD) -> Upstream:
     return Upstream.parse(f"127.0.0.1:{port}:user-abc-network-res-country-us-sid-{{sid}}-ttl-30:{password}")
 
 
-async def tunnel(relay_url: str, payload: bytes) -> tuple[bytes, bytes]:
-    host, port = relay_url.removeprefix("http://").split(":")
-    reader, writer = await asyncio.open_connection(host, int(port))
-    writer.write(b"CONNECT www.google.com:443 HTTP/1.1\r\nHost: www.google.com:443\r\n\r\n")
+def relay_login(relay_url: str) -> bytes:
+    parts = urlsplit(relay_url)
+    return b"Proxy-Authorization: Basic " + base64.b64encode(f"{parts.username}:{parts.password}".encode())
+
+
+async def tunnel(relay_url: str, payload: bytes, *, login: bool = True) -> tuple[bytes, bytes]:
+    parts = urlsplit(relay_url)
+    reader, writer = await asyncio.open_connection(parts.hostname, parts.port)
+    auth = relay_login(relay_url) + b"\r\n" if login else b""
+    writer.write(b"CONNECT www.google.com:443 HTTP/1.1\r\nHost: www.google.com:443\r\n" + auth + b"\r\n")
     await writer.drain()
     reply = await reader.readuntil(b"\r\n\r\n")
     echoed = b""
@@ -195,7 +202,7 @@ def test_proxy_lists_and_files(tmp_path: Path) -> None:
 
 # ------------------------------------------------------------------- relay
 async def test_relay_adds_login_meters_and_persists(upstream: FakeUpstream, tmp_path: Path) -> None:
-    meter = ByteMeter(tmp_path / "bytes.json", cap_bytes=None)
+    meter = ByteMeter(tmp_path / "bytes.sqlite", cap_bytes=None)
     relay = Relay(account(upstream.port).with_session(random.Random(2)), meter, tag="t")
     url = await relay.start()
     try:
@@ -207,18 +214,16 @@ async def test_relay_adds_login_meters_and_persists(upstream: FakeUpstream, tmp_
         assert meter.total == relay.bytes_total
     finally:
         await relay.close()
-    saved = json.loads((tmp_path / "bytes.json").read_text(encoding="utf-8"))
-    assert saved["total"] == meter.total
-    assert ByteMeter(tmp_path / "bytes.json").total == meter.total  # survives a restart
+    assert ByteMeter(tmp_path / "bytes.sqlite").total == meter.total  # survives a restart
 
 
 def test_meters_in_two_processes_add_up(tmp_path: Path) -> None:
-    first, second = ByteMeter(tmp_path / "bytes.json"), ByteMeter(tmp_path / "bytes.json")
+    first, second = ByteMeter(tmp_path / "bytes.sqlite"), ByteMeter(tmp_path / "bytes.sqlite")
     first.add(600)
-    second.add(600)
+    second.add(600)  # both started from 0: writing back a total read earlier would lose one of them
     first.save()
     second.save()
-    assert ByteMeter(tmp_path / "bytes.json").total == 1200
+    assert ByteMeter(tmp_path / "bytes.sqlite").total == 1200
     assert second.total == 1200
 
 
@@ -241,7 +246,7 @@ async def test_relay_through_a_socks5_proxy(upstream: FakeUpstream) -> None:
 
 
 async def test_relay_data_limit_refuses_new_connections(upstream: FakeUpstream, tmp_path: Path) -> None:
-    meter = ByteMeter(tmp_path / "bytes.json", cap_bytes=1000)
+    meter = ByteMeter(tmp_path / "bytes.sqlite", cap_bytes=1000)
     relay = Relay(account(upstream.port).with_session(random.Random(3)), meter, tag="t")
     url = await relay.start()
     try:
@@ -264,20 +269,32 @@ async def test_relay_forwards_upstream_auth_failure(upstream: FakeUpstream) -> N
         await relay.close()
 
 
+async def test_relay_refuses_a_client_without_its_login(upstream: FakeUpstream) -> None:
+    relay = Relay(account(upstream.port), ByteMeter(), tag="t")
+    url = await relay.start()
+    try:
+        reply, echoed = await tunnel(url, b"x", login=False)
+        assert reply.startswith(b"HTTP/1.1 407") and echoed == b""
+        assert upstream.heads == []  # nothing reached the paid proxy
+    finally:
+        await relay.close()
+
+
 async def test_relay_plain_http_gets_login_and_close(upstream: FakeUpstream) -> None:
     relay = Relay(account(upstream.port), ByteMeter(), tag="t")
     url = await relay.start()
     try:
-        host, port = url.removeprefix("http://").split(":")
-        reader, writer = await asyncio.open_connection(host, int(port))
+        parts = urlsplit(url)
+        reader, writer = await asyncio.open_connection(parts.hostname, parts.port)
         writer.write(
             b"GET http://example.test/ HTTP/1.1\r\nHost: example.test\r\nProxy-Connection: keep-alive\r\n"
-            b"Connection: keep-alive\r\nProxy-Authorization: Basic Zm9v\r\n\r\n"
+            b"Connection: keep-alive\r\n" + relay_login(url) + b"\r\n\r\n"
         )
         await writer.drain()
         assert (await reader.read()).endswith(b"ok")
         head = upstream.heads[-1].lower()
-        assert head.count(b"proxy-authorization:") == 1 and b"zm9v" not in head
+        assert head.count(b"proxy-authorization:") == 1  # the upstream's login only, not the relay's
+        assert relay_login(url).split(b" ")[-1].lower() not in head
         assert b"connection: close" in head and b"keep-alive" not in head
     finally:
         await relay.close()
@@ -367,7 +384,7 @@ def pool_factory(upstream: FakeUpstream, tmp_path: Path) -> Any:
             return Place(ip="203.0.113.7", country=country, timezone="America/Chicago", locale="en-US")
 
         cfg = PoolConfig(
-            proxies=proxies or (account(upstream.port),), meter_path=tmp_path / "bytes.json", **kw
+            proxies=proxies or (account(upstream.port),), meter_path=tmp_path / "bytes.sqlite", **kw
         )
         return ProxyPool(cfg, make_fetcher=FakeHybrid, locate=locate)  # type: ignore[arg-type]
 
@@ -515,11 +532,30 @@ async def test_a_static_exit_that_changes_ip_is_looked_up_again(pool_factory: An
         await pool.aclose()
 
 
-def _locate_at(ip: str) -> Any:
+def _locate_at(ip: str, country: str = "US") -> Any:
     async def locate(relay_url: str) -> Place:
-        return Place(ip=ip, country="US", timezone="America/Chicago", locale="en-US")
+        return Place(ip=ip, country=country, timezone="America/Chicago", locale="en-US")
 
     return locate
+
+
+async def test_a_static_exit_that_moves_to_another_country_is_dropped(pool_factory: Any) -> None:
+    proxy = parse_proxies("u:p@10.0.0.1:3128")
+    pool = pool_factory(proxies=proxy, countries=["GB"])
+    try:
+        await pool.fetch(SearchRequest(query="a"))
+        (member,) = pool._members.values()
+        member.located_at = 0.0
+        pool._locate = _locate_at("189.218.3.209", "MX")  # seen today: a London port moved to Mexico
+        await pool.fetch(SearchRequest(query="b"))
+        await settle(pool)
+        assert pool._members == {} and FakeHybrid.instances[0].closed
+        pool._dead_until[proxy[0].key] = 0.0
+        with pytest.raises(FetchError):  # still in Mexico: refused, not a new device there
+            await pool.fetch(SearchRequest(query="c"))
+        assert len(FakeHybrid.instances) == 1
+    finally:
+        await pool.aclose()
 
 
 async def test_a_dead_static_proxy_is_not_tried_again_on_every_search(pool_factory: Any) -> None:
@@ -559,7 +595,7 @@ async def test_a_resting_static_proxy_is_looked_at_again_for_a_new_ip(pool_facto
 
 
 async def test_pool_refuses_when_data_limit_used(pool_factory: Any, tmp_path: Path) -> None:
-    (tmp_path / "bytes.json").write_text(json.dumps({"total": 2_000_000}), encoding="utf-8")
+    (tmp_path / "bytes.json").write_text(json.dumps({"total": 2_000_000}), encoding="utf-8")  # an older meter
     pool = pool_factory(byte_cap_bytes=1_000_000)
     try:
         with pytest.raises(FetchError) as err:
@@ -590,6 +626,8 @@ async def test_pages_go_through_the_proxy_and_count_against_the_limit(
         assert pool.meter.total > 0
         await page.fetch_page("http://www.google.com/goto?url=x", proxy=relay_url, google_only=True)
         assert upstream.heads[-1].startswith(b"GET http://www.google.com/goto")  # Google's hop: proxied
+        await pool.drop_page_proxy(relay_url)
+        assert await pool.page_proxy() != relay_url  # a failed page exit is replaced
         pool.meter.add(2_000_000)
         with pytest.raises(FetchError) as err:
             await pool.page_proxy()

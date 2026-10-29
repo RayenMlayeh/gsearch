@@ -84,7 +84,7 @@ def fetcher_from_env(env: Mapping[str, str] | None = None) -> tuple[Fetcher, boo
             proxies=parse_proxies(proxies),
             browser=browser,
             byte_cap_bytes=int(float(limit) * 1e6) if limit else None,
-            meter_path=state / "proxy_bytes.json",
+            meter_path=state / "proxy_bytes.sqlite",
             pages_direct=env.get("GSEARCH_PAGES_DIRECT", "").strip() == "1",
         )
     )

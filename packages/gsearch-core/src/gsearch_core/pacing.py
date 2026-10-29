@@ -16,8 +16,6 @@ class PacingPolicy:
     searches_per_day: int = 150
     think_min_s: float = 2.0
     think_max_s: float = 9.0
-    resolve_gap_min_s: float = 0.8
-    resolve_gap_max_s: float = 2.5
     warmup_dwell_min_s: float = 20.0
     warmup_dwell_max_s: float = 45.0
 

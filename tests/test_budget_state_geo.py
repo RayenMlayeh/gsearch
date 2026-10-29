@@ -83,3 +83,24 @@ def test_main_language_from_cldr() -> None:
     assert geo.main_language("AE") == "ar-AE"
     assert geo.main_language("DE") == "de-DE"
     assert geo.Place(ip="1.2.3.4", country="TN", timezone="Africa/Tunis", locale="ar-TN").language == "ar"
+
+
+@pytest.mark.anyio
+async def test_an_exit_ip_is_looked_up_again_not_remembered(monkeypatch: pytest.MonkeyPatch) -> None:
+    import functools
+
+    from gsearch_core import geo
+
+    answers = iter(["203.0.113.7", "198.51.100.4"])  # the proxy changed its exit IP between lookups
+
+    @functools.cache
+    def public_ip(proxy: str | None = None) -> str:  # cached per proxy URL, like Camoufox's
+        return next(answers)
+
+    monkeypatch.setattr(geo, "public_ip", public_ip)
+    monkeypatch.setattr(
+        geo, "locate", lambda ip: geo.Place(ip=ip, country="GB", timezone="Europe/London", locale=None)
+    )
+    first = await geo.locate_exit("http://relay")
+    again = await geo.locate_exit("http://relay")
+    assert (first.ip, again.ip) == ("203.0.113.7", "198.51.100.4")

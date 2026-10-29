@@ -6,8 +6,9 @@ The browser and the HTTP client use 127.0.0.1 without credentials; the relay spe
   proxy session, so the same exit IP.
 - Metering: residential proxies bill per GB in both directions, so the bytes counted here are the bytes
   on the bill (headers and TLS records included; the provider may round differently).
-- The limit is persisted, so it holds across runs.
+- The limit is persisted in SQLite, so it holds across runs and across servers running at once.
 - Credentials stay out of the browser profile and out of logs (only `redacted()` is ever logged).
+- Each relay has its own random login, so other programs on this machine cannot use the proxy through it.
 """
 
 from __future__ import annotations
@@ -18,9 +19,10 @@ import contextlib
 import hashlib
 import json
 import logging
-import os
 import random
 import re
+import secrets
+import sqlite3
 import string
 import time
 from dataclasses import dataclass, replace
@@ -136,19 +138,28 @@ def parse_proxies(text: str) -> tuple[Upstream, ...]:
 
 
 class ByteMeter:
-    """Bytes through every relay of a process, persisted so a hard limit holds across runs."""
+    """Bytes through every relay of a process, persisted so a hard limit holds across runs. Each save adds
+    this process's new bytes in one SQL statement, so two servers sharing the file never undo each other."""
 
     def __init__(self, path: Path | None = None, cap_bytes: int | None = None) -> None:
-        self.path = path
         self.cap_bytes = cap_bytes
         self._unsaved = 0
         self._saved_at = 0.0
+        self._db: sqlite3.Connection | None = None
+        if path is not None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            self._db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
+            self._db.execute(
+                "CREATE TABLE IF NOT EXISTS meter (id INTEGER PRIMARY KEY CHECK (id = 1), total INTEGER)"
+            )
+            before = path.with_suffix(".json")  # where earlier versions kept the total
+            known = before != path and before.exists()
+            start = json.loads(before.read_text(encoding="utf-8")).get("total", 0) if known else 0
+            self._db.execute("INSERT OR IGNORE INTO meter (id, total) VALUES (1, ?)", (int(start),))
         self.total = self._read()
 
     def _read(self) -> int:
-        if self.path is None or not self.path.exists():
-            return 0
-        return int(json.loads(self.path.read_text(encoding="utf-8")).get("total", 0))
+        return int(self._db.execute("SELECT total FROM meter").fetchone()[0]) if self._db else 0
 
     @property
     def exceeded(self) -> bool:
@@ -161,15 +172,12 @@ class ByteMeter:
             self.save()
 
     def save(self) -> None:
-        if self.path is None:
+        if self._db is None:
             return
         self._saved_at = time.monotonic()
-        total = self._read() + self._unsaved
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.path.with_suffix(f".{os.getpid()}.tmp")
-        tmp.write_text(json.dumps({"total": total}), encoding="utf-8")
-        tmp.replace(self.path)
-        self.total, self._unsaved = total, 0
+        self._db.execute("UPDATE meter SET total = total + ?", (self._unsaved,))
+        self._unsaved = 0
+        self.total = self._read()
 
 
 class Relay:
@@ -182,6 +190,7 @@ class Relay:
         self.timeout_s = timeout_s
         self.bytes_up = 0
         self.bytes_down = 0
+        self._secret = secrets.token_urlsafe(16)
         self._server: asyncio.Server | None = None
         self._tasks: set[asyncio.Task[None]] = set()
 
@@ -189,7 +198,7 @@ class Relay:
     def url(self) -> str:
         assert self._server is not None, "relay not started"
         port = self._server.sockets[0].getsockname()[1]
-        return f"http://127.0.0.1:{port}"
+        return f"http://gsearch:{self._secret}@127.0.0.1:{port}"
 
     @property
     def bytes_total(self) -> int:
@@ -234,6 +243,13 @@ class Relay:
         head = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), self.timeout_s)
         if len(head) > _HEAD_LIMIT:
             return
+        if not self._authorized(head):
+            writer.write(
+                b"HTTP/1.1 407 Proxy Authentication Required\r\n"
+                b'Proxy-Authenticate: Basic realm="gsearch"\r\nConnection: close\r\nContent-Length: 0\r\n\r\n'
+            )
+            await writer.drain()
+            return
         if self.meter.exceeded:
             log.warning("relay_refused_data_limit tag=%s total=%s", self.tag, self.meter.total)
             writer.write(b"HTTP/1.1 507 Data limit reached\r\nConnection: close\r\nContent-Length: 0\r\n\r\n")
@@ -263,6 +279,15 @@ class Relay:
         finally:
             with contextlib.suppress(Exception):
                 up_writer.close()
+
+    def _authorized(self, head: bytes) -> bool:
+        token = base64.b64encode(f"gsearch:{self._secret}".encode())
+        for line in head.split(b"\r\n")[1:]:
+            name, _, value = line.partition(b":")
+            if name.strip().lower() == b"proxy-authorization":
+                scheme, _, given = value.strip().partition(b" ")
+                return scheme.lower() == b"basic" and secrets.compare_digest(given.strip(), token)
+        return False
 
     async def _http_open(
         self,

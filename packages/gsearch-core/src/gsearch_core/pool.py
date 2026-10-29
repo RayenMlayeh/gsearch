@@ -8,7 +8,8 @@ Two kinds of proxy, each used the way that worked best in testing:
 - static (a fixed IP per proxy: a VPS, datacenter or ISP proxy list): one warm session per proxy, used in
   turn, each with its own budget like a home IP. A proxy that gets a CAPTCHA rests until tomorrow.
 Every new exit is located first and dropped if it does not answer, or if it is outside the country the
-login asks for. A blocked search is retried on another exit, up to `max_attempts`.
+login asks for (without one: the country the proxy was first seen in, since some providers move a port
+between countries). A blocked search is retried on another exit, up to `max_attempts`.
 
 Static proxies are kept ready in the background: `prewarm` opens a session (and warms up a new device) on
 up to SPARES exits, at start and after every search, and searches go to an exit with a session open first,
@@ -99,7 +100,9 @@ class ProxyPool:
         self._locate = locate
         self._members: dict[str, Member] = {}
         self._dead_until: dict[str, float] = {}
+        self._country: dict[str, str] = {}  # static proxy -> the country its device was made for
         self._page_relay: Relay | None = None
+        self._old_page_relays: list[Relay] = []
         self._turn = 0
         self._lock = asyncio.Lock()
         self._warming: asyncio.Task[None] | None = None
@@ -126,7 +129,8 @@ class ProxyPool:
             log.info("pool_exit_dead proxy=%s error=%s", upstream.key, type(exc).__name__)
             await relay.close()
             return None
-        if upstream.country and place.country != upstream.country:
+        first_seen = place.country if self.rotating else self._country.setdefault(upstream.key, place.country)
+        if place.country != (upstream.country or first_seen):
             self.stats["exits_wrong_country"] += 1
             log.info("pool_exit_rejected proxy=%s ip=%s country=%s", upstream.key, place.ip, place.country)
             await relay.close()
@@ -226,7 +230,8 @@ class ProxyPool:
             member = await self._next_static(self._ready())
             await member.fetcher.prewarm(self._rng.choice(PREWARM_QUERIES))
         except Exception as exc:  # the next search reports the real error
-            log.warning("pool_prewarm_failed: %s: %s", type(exc).__name__, exc)
+            none_free = isinstance(exc, FetchError) and exc.code == "rate_limited"
+            log.log(logging.INFO if none_free else logging.WARNING, "pool_prewarm_failed: %s", exc)
             if member is not None:  # not again after every search: each try costs a browser's data
                 self._dead_until[member.key] = time.monotonic() + DEAD_S
 
@@ -252,7 +257,16 @@ class ProxyPool:
         except Exception:  # the exit is checked again next time
             return
         old = member.fetcher.browser.config.place
-        if old is None or place.ip != old.ip:
+        if old is not None and place.country != old.country:
+            # Its device speaks the old country's language and time zone: drop it, as at spawn.
+            log.info("pool_exit_left_country proxy=%s ip=%s country=%s", member.key, place.ip, place.country)
+            self.stats["exits_wrong_country"] += 1
+            self._dead_until[member.key] = time.monotonic() + DEAD_S
+            while member.busy:  # the search running on it ends first
+                await asyncio.sleep(0.5)
+            if self._members.get(member.key) is member:
+                await self._retire(member, "left its country")
+        elif old is None or place.ip != old.ip:
             log.info("pool_exit_moved proxy=%s ip=%s", member.key, place.ip)
             member.fetcher.browser.move_to(place)
 
@@ -349,6 +363,14 @@ class ProxyPool:
                 await self._page_relay.start()
             return self._page_relay.url
 
+    async def drop_page_proxy(self, url: str) -> None:
+        """A page fetch through `url` failed: the next one goes through a new exit. The old relay is closed
+        at shutdown, not now, so other pages still reading through it finish."""
+        async with self._lock:
+            if self._page_relay is not None and self._page_relay.url == url:
+                self._old_page_relays.append(self._page_relay)
+                self._page_relay = None
+
     # ---------------------------------------------------------------- status
     def status(self) -> dict[str, str | int | float | bool | None]:
         return {
@@ -367,6 +389,7 @@ class ProxyPool:
             task.cancel()
         for member in list(self._members.values()):
             await self._retire(member, "shutdown")
-        if self._page_relay is not None:
-            await self._page_relay.close()
+        for relay in [self._page_relay, *self._old_page_relays]:
+            if relay is not None:
+                await relay.close()
         self.meter.save()

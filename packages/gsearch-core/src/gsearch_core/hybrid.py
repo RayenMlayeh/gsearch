@@ -201,7 +201,7 @@ class HybridFetcher:
                 # The session no longer satisfies the gate: re-open it in the real browser.
                 self._drop_session("js_gate")
                 self.stats["remints"] += 1
-                return await self._browser_search(req)
+                return await self._browser_search(req, admitted=True)  # this search already took its budget
             return FetchedPage(
                 url=str(resp.url),
                 status=resp.status_code,
@@ -249,8 +249,8 @@ class HybridFetcher:
         except OSError:  # evidence is best effort; never turn a result into a failure
             return None
 
-    async def _browser_search(self, req: SearchRequest) -> FetchedPage:
-        page = await self.browser.fetch(req)
+    async def _browser_search(self, req: SearchRequest, *, admitted: bool = False) -> FetchedPage:
+        page = await self.browser.fetch(req, admitted=admitted)
         self.stats["browser_searches"] += 1
         ok = classify(page.html, url=page.url, status=page.status).state is PageState.OK
         if ok and await self._adopt():
@@ -260,7 +260,7 @@ class HybridFetcher:
     # ------------------------------------------------------------ resolution
     async def resolve_links(self, links: list[str]) -> dict[str, str | None]:
         if not self._adopted or self._links_http is None:
-            return await self.browser.resolve_links(links)
+            return dict.fromkeys(links)  # no session to copy headers from; fetch_page still follows each link
         sem = asyncio.Semaphore(RESOLVE_CONCURRENCY)
 
         async def one(link: str) -> tuple[str, str | None]:

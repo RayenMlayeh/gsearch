@@ -3,7 +3,6 @@
 - Google's JS gate runs once per session; later searches in the session are a single request.
 - uBlock Origin is excluded: Camoufox loads it by default and it removes the ads from the page.
 - Locale and geolocation come from the exit IP, so the device matches where it connects from.
-- Result links are resolved by real clicks in the same session, read from the redirect.
 - Budget, daily cap and CAPTCHA rest are checked before any browser work and persist across restarts.
 - A lasting identity (home IP, fixed proxy) keeps one device and its Google cookies across launches, like a
   person's own Firefox; only the place (timezone, language, geolocation) follows the exit IP.
@@ -27,7 +26,7 @@ from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, quote_plus, urlsplit
+from urllib.parse import quote_plus, urlsplit
 
 from browserforge.fingerprints import Screen
 from camoufox.addons import DefaultAddons
@@ -35,7 +34,6 @@ from camoufox.async_api import AsyncCamoufox
 from camoufox.utils import launch_options
 from gsearch_parse.classify import classify
 from gsearch_parse.models import PageState, SearchRequest
-from gsearch_parse.redirect import redirect_target
 
 from .fetch import FetchedPage, FetchError, build_search_url
 from .geo import Place, locate_exit
@@ -81,19 +79,6 @@ def consent_country(html: str) -> str | None:
     return match.group(1) if match else None
 
 
-def redirect_blob(url: str) -> str | None:
-    """The opaque `url=` value of a Google result redirect, for both forms it takes.
-
-    The DOM serves `/goto?url=<blob>`; on a real click Google's JS rewrites it to
-    `/url?sa=t&source=web&rct=j&opi=...&url=<blob>&...` before navigating.
-    """
-    parts = urlsplit(url)
-    if parts.path not in ("/goto", "/url"):
-        return None
-    values = parse_qs(parts.query).get("url")
-    return values[0] if values else None
-
-
 def device_options(cfg: CamoufoxConfig, place: Place | None) -> dict[str, Any]:
     """Camoufox launch options for an identity, shared by the backend and the identity probe."""
     headless: bool | str = cfg.headless
@@ -120,14 +105,24 @@ def device_options(cfg: CamoufoxConfig, place: Place | None) -> dict[str, Any]:
         if cfg.geoip:
             options["geoip"] = place.ip
     if cfg.proxy_url:
-        options["proxy"] = {"server": cfg.proxy_url}
+        proxy = urlsplit(cfg.proxy_url)
+        options["proxy"] = {"server": f"{proxy.scheme}://{proxy.hostname}:{proxy.port}"}
+        if proxy.username:  # the relay's own login; Playwright takes it apart from the address
+            options["proxy"] |= {"username": proxy.username, "password": proxy.password or ""}
     return options
 
 
 def device_config(options: dict[str, Any]) -> dict[str, Any]:
     """The device Camoufox draws for these launch options (hardware, screen, WebGL, fonts, voices, noise
-    seeds), without the place, which follows the exit IP on every launch."""
-    env = launch_options(**{**options, "headless": options["headless"] is True})["env"]
+    seeds), without the place, which follows the exit IP on every launch. A real-device preset can name a
+    GPU Camoufox has no WebGL data for (observed: Intel Arc A750, GeForce 8800 GTX); another one is drawn."""
+    for attempt in range(10):
+        try:
+            env = launch_options(**{**options, "headless": options["headless"] is True})["env"]
+            break
+        except ValueError as exc:
+            if "WebGL" not in str(exc) or attempt == 9:
+                raise
     chunks = sorted((int(k.rsplit("_", 1)[1]), v) for k, v in env.items() if k.startswith("CAMOU_CONFIG_"))
     config: dict[str, Any] = json.loads("".join(v for _, v in chunks))
     return {k: v for k, v in config.items() if not k.startswith(_PLACE_KEYS)}
@@ -157,7 +152,6 @@ class CamoufoxConfig:
     nav_timeout_ms: int = 30_000
     results_timeout_ms: int = 45_000
     settle_timeout_ms: int = 10_000  # waiting for `load` beyond this is skipped, never an error
-    resolve_timeout_s: float = 10.0  # per link; a stuck link must never stall the whole search
     policy: PacingPolicy = field(default_factory=PacingPolicy)
     state_path: Path = field(default_factory=lambda: state_dir() / "state.sqlite")
     evidence_dir: Path = field(default_factory=lambda: state_dir() / "evidence")
@@ -204,16 +198,14 @@ class CamoufoxFetcher:
 
     @property
     def _rest_key(self) -> str:
-        """Behind a proxy a rest belongs to the exit IP, so a login whose IP changes is not held back by the
-        old one; the home IP is the identity itself."""
+        """Behind a proxy, budget and rest belong to the exit IP: a login whose IP changes is not held back by
+        the old one, and two ports on one IP share its budget. The home IP is the identity itself."""
         place = self.config.place
-        return (
-            f"{self.config.identity}@{place.ip}" if self.config.proxy_url and place else self.config.identity
-        )
+        return f"exit@{place.ip}" if self.config.proxy_url and place else self.config.identity
 
     def _hourly_wait_s(self) -> float:
         p = self.config.policy
-        return self._state.token_wait_s(self.config.identity, p.searches_per_hour / 3600.0, p.burst)
+        return self._state.token_wait_s(self._rest_key, p.searches_per_hour / 3600.0, p.burst)
 
     async def admit(self) -> None:
         """Refuse before any browser work when the identity has no budget. Raises FetchError."""
@@ -227,14 +219,14 @@ class CamoufoxFetcher:
                 retryable=True,
                 retry_after_s=math.ceil(until - self._wall()),
             )
-        if self._state.searches_today(ident) >= policy.searches_per_day:
+        if self._state.searches_today(self._rest_key) >= policy.searches_per_day:
             raise FetchError(
                 "rate_limited",
                 f"daily budget of {policy.searches_per_day} searches used",
                 retryable=True,
                 retry_after_s=math.ceil(self._tomorrow_epoch() - self._wall()),
             )
-        wait = self._state.take_token(ident, policy.searches_per_hour / 3600.0, policy.burst)
+        wait = self._state.take_token(self._rest_key, policy.searches_per_hour / 3600.0, policy.burst)
         if wait > 0:
             raise FetchError(
                 "rate_limited",
@@ -452,9 +444,11 @@ class CamoufoxFetcher:
         except Exception:  # evidence is best effort; never turn a result into a failure
             return None
 
-    async def fetch(self, req: SearchRequest) -> FetchedPage:
+    async def fetch(self, req: SearchRequest, *, admitted: bool = False) -> FetchedPage:
+        """`admitted`: the caller already took this search's budget (the hybrid redoing an HTTP search)."""
         async with self._lock:
-            await self.admit()
+            if not admitted:
+                await self.admit()
             try:
                 await self._ensure_session(req.lang)
                 if self._searches_in_session:
@@ -473,7 +467,7 @@ class CamoufoxFetcher:
                     retry_after_s=30,
                     evidence_ref=evidence,
                 ) from exc
-            self._state.record_search(self.config.identity)
+            self._state.record_search(self._rest_key)
             self._searches_in_session += 1
             self._last_used = time.monotonic()
 
@@ -506,10 +500,10 @@ class CamoufoxFetcher:
         return math.ceil(until - self._wall())
 
     def record_search(self) -> None:
-        self._state.record_search(self.config.identity)
+        self._state.record_search(self._rest_key)
 
     def record_resolve(self) -> None:
-        self._state.record_resolve(self.config.identity)
+        self._state.record_resolve(self._rest_key)
 
     def note_used(self) -> None:
         self._last_used = time.monotonic()
@@ -521,11 +515,10 @@ class CamoufoxFetcher:
 
     def ready_in_s(self) -> float:
         """Seconds until admit() lets a search through: rest, daily cap or hourly budget (0 = now)."""
-        ident = self.config.identity
         resting = self._state.resting_until(self._rest_key)
         if resting is not None:
             return max(0.0, resting[0] - self._wall())
-        if self._state.searches_today(ident) >= self.config.policy.searches_per_day:
+        if self._state.searches_today(self._rest_key) >= self.config.policy.searches_per_day:
             return self._tomorrow_epoch() - self._wall()
         return self._hourly_wait_s()
 
@@ -550,139 +543,10 @@ class CamoufoxFetcher:
                 "hl": self._session_hl,
             }
 
-    # ------------------------------------------------------------- resolution
-    async def resolve_links(self, links: list[str]) -> dict[str, str | None]:
-        """Destination of each Google /goto link, read from its 302 inside the search session.
-
-        Each link is opened the way a person opens a result in a background tab: a middle-click on the
-        result's own anchor in the results page. A scripted `page.goto(link, referer=...)` sends
-        `Sec-Fetch-Site: none` together with a Referer, a combination no real browser produces. While
-        resolving, a context route aborts every request in the new tabs except the redirect itself, so
-        destinations never load.
-        """
-        out: dict[str, str | None] = {}
-        async with self._lock:
-            if self._context is None:
-                return dict.fromkeys(links)
-            targets = {
-                link: link.replace(GOOGLE_ORIGIN, self.config.base_url, 1) for link in dict.fromkeys(links)
-            }
-            loop = asyncio.get_running_loop()
-            # Keyed by the redirect's url= blob: the request a click really makes is a rewritten /url
-            # form of the /goto href.
-            locations: dict[str, asyncio.Future[str | None]] = {
-                blob: loop.create_future() for t in targets.values() if (blob := redirect_blob(t))
-            }
-            serp = self._page
-
-            async def gate(route: Any) -> None:
-                # Allow only the results page's own requests and the result redirects being resolved.
-                # Requests from a just-opened tab often have no resolvable frame yet, so "owner unknown"
-                # means abort.
-                request = route.request
-                try:
-                    owner = request.frame.page
-                except Exception:
-                    owner = None
-                if owner is serp or redirect_blob(request.url) in locations:
-                    await route.fallback()
-                else:
-                    log.debug(
-                        "resolve_gate_abort owner=%s url=%s",
-                        "unknown" if owner is None else "tab",
-                        request.url[:160],
-                    )
-                    await route.abort()
-
-            async def on_response(response: Any) -> None:
-                blob = redirect_blob(response.url)
-                if blob is None:
-                    return
-                log.debug("resolve_response status=%s url=%s", response.status, response.url[:160])
-                future = locations.get(blob)
-                if future is None or future.done():
-                    return
-                if 300 <= response.status < 400:  # /goto: plain server redirect
-                    future.set_result((await response.all_headers()).get("location"))
-                else:  # clicked /url form: 200 interstitial page carrying the destination
-                    try:
-                        future.set_result(redirect_target(await response.text()))
-                    except Exception:  # body unavailable (tab already closing)
-                        future.set_result(None)
-
-            await self._context.route("**/*", gate)
-            self._context.on("response", on_response)
-            try:
-                for i, (link, target) in enumerate(targets.items()):
-                    if i:
-                        p = self.config.policy
-                        await asyncio.sleep(
-                            lognormal_between(self._rng, p.resolve_gap_min_s, p.resolve_gap_max_s)
-                        )
-                    blob = redirect_blob(target)
-                    out[link] = await self._click_resolve(target, locations[blob]) if blob else None
-                    self._state.record_resolve(self.config.identity)
-            finally:
-                self._context.remove_listener("response", on_response)
-                with contextlib.suppress(Exception):
-                    await self._context.unroute("**/*", gate)
-            self._last_used = time.monotonic()
-        return out
-
-    async def _click_resolve(self, target: str, location: asyncio.Future[str | None]) -> str | None:
-        parts = urlsplit(target)
-        href = f"{parts.path}?{parts.query}" if parts.query else parts.path
-        # The same /goto URL also appears on hidden anchors (e.g. collapsed AI Overview sources); click the
-        # result's title link, the one a person clicks: the anchor that contains the result's <h3>.
-        anchor = self._page.locator(f'a[href="{href}"]:has(h3)').first
-        if await anchor.count() == 0:
-            anchor = self._page.locator(f'a[href="{href}"]:visible').first
-            if await anchor.count() == 0:
-                log.info("resolve_skipped_no_anchor href=%s", href[:80])
-                return None  # the link is not on the page (e.g. it came from a cached response)
-        tab: Any = None
-        try:
-            tab = await self._open_in_background(anchor, href)
-            if tab is None:
-                # Fallback: one request with the session's cookies, reading the redirect without following
-                # it. A navigation would follow it to the destination, which route() cannot stop.
-                response = await self._context.request.get(
-                    target, max_redirects=0, timeout=self.config.resolve_timeout_s * 1000
-                )
-                return response.headers.get("location") or redirect_target(await response.text())
-            return await asyncio.wait_for(location, timeout=self.config.resolve_timeout_s)
-        except Exception as exc:  # timeout: report unresolved, never fail the search
-            log.warning("resolve_failed href=%s error=%s: %s", href[:80], type(exc).__name__, str(exc)[:200])
-            return None
-        finally:
-            if tab is not None:
-                with contextlib.suppress(Exception):
-                    await tab.close()
-
-    async def _open_in_background(self, anchor: Any, href: str) -> Any:
-        """Middle-click the anchor (background tab). Retries once centred; None if it cannot be clicked.
-
-        Ctrl+click sends the same headers but headless Camoufox reports that tab to Playwright
-        seconds late, so its 302 is missed.
-        """
-        for attempt in (1, 2):
-            try:
-                async with self._context.expect_page(timeout=self.config.resolve_timeout_s * 1000) as opened:
-                    await anchor.click(button="middle", timeout=CLICK_TIMEOUT_MS)
-                return await opened.value
-            except Exception as exc:  # usually another element intercepts the pointer
-                log.info(
-                    "resolve_click_retry href=%s attempt=%d error=%s", href[:80], attempt, type(exc).__name__
-                )
-                with contextlib.suppress(Exception):
-                    await anchor.evaluate("el => el.scrollIntoView({block: 'center'})")
-        log.warning("resolve_click_fallback_typed_url href=%s", href[:80])
-        return None
-
     # ----------------------------------------------------------------- status
     def status(self) -> dict[str, str | int | float | bool | None]:
         ident, p = self.config.identity, self.config.policy
-        today = self._state.today(ident)
+        today = self._state.today(self._rest_key)
         resting = self._state.resting_until(self._rest_key)
         return {
             "identity": ident,

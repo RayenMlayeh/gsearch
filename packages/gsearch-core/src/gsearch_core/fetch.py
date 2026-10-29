@@ -82,6 +82,8 @@ class PageProxy(Protocol):
 
     async def page_proxy(self) -> str: ...
 
+    async def drop_page_proxy(self, url: str) -> None: ...
+
 
 @runtime_checkable
 class Prewarmer(Protocol):

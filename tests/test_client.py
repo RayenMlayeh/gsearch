@@ -121,3 +121,36 @@ async def test_read_top_brings_the_top_pages_in_the_same_call(monkeypatch: pytes
     assert pages[0] is not None and len(pages[0].text) == 8000 and pages[0].truncated
     assert pages[1] is None and pages[2] is not None and pages[3:] == [None] * (len(pages) - 3)
     assert "result(s) 2 could not be read" in resp.meta.warnings
+
+
+class _PagesThroughProxies(FixtureFetcher):
+    pages_direct = False
+
+    def __init__(self) -> None:
+        super().__init__(GECKO)
+        self.proxies = iter(["http://127.0.0.1:1", "http://127.0.0.1:2"])
+        self.current = next(self.proxies)
+        self.dropped: list[str] = []
+
+    async def page_proxy(self) -> str:
+        return self.current
+
+    async def drop_page_proxy(self, url: str) -> None:
+        self.dropped.append(url)
+        self.current = next(self.proxies)
+
+
+async def test_a_page_exit_that_fails_is_replaced(monkeypatch: pytest.MonkeyPatch) -> None:
+    from gsearch_core import client as client_module
+    from gsearch_parse.models import PageContent
+
+    async def fetch_page(url: str, *, proxy: str, google_only: bool) -> PageContent:
+        if proxy.endswith(":1"):
+            raise FetchError("network", "fetch failed: ConnectionError", retryable=True)
+        return PageContent(url=url, text="ok", truncated=False)
+
+    monkeypatch.setattr(client_module, "fetch_page", fetch_page)
+    fetcher = _PagesThroughProxies()
+    page = await SearchClient(fetcher).fetch_page("https://site.example/")
+    assert not isinstance(page, SearchError) and page.text == "ok"
+    assert fetcher.dropped == ["http://127.0.0.1:1"]

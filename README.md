@@ -207,10 +207,11 @@ GSEARCH_PROXY=/path/to/proxies.txt
 - **Rotating:** a new IP and a new browser for every search, up to 3 at once. A blocked IP is replaced, up to
   4 IPs per search. `country-xx` or `cc-xx` in the login is checked, and exits elsewhere are dropped.
 - **Static:** each IP keeps one warm session, and the IPs take turns. Each IP has its own budget (20 searches
-  an hour, 150 a day) and rests until midnight after a CAPTCHA, so ten IPs allow up to about 200 searches an
+  an hour, 150 a day, shared by ports that exit through the same IP) and rests until midnight after a CAPTCHA, so ten IPs allow up to about 200 searches an
   hour. The MCP server gets two of them ready in the background from the start, so a search never waits for
   a browser, and a CAPTCHA hands over to the other one. A login whose IP changes on its own (sticky sessions)
-  is looked up again every 3 minutes, so a CAPTCHA rests the IP Google saw.
+  is looked up again every 3 minutes, so a CAPTCHA rests the IP Google saw, and an exit that moves to
+  another country is dropped.
 - **Data:** every byte goes through a local relay that counts it, and `GSEARCH_DATA_LIMIT_MB` stops
   everything at your limit, across restarts.
 
@@ -311,7 +312,7 @@ To call it over MCP from your own code, the way an agent does, see
 | `captcha` with hours to wait, no proxy | Your own IP was challenged and rests until midnight. | Wait, or add a proxy. |
 | `rate_limited` | Every IP is at its hourly or daily budget (own IP or static proxies). | Wait `retry_after_s`, or add proxies. |
 | `proxy: no usable exit in 4 draws` | Four IPs in a row were dead or in the wrong country. | Check the country part of the login, and the provider. |
-| `proxy: proxy data limit reached` | `GSEARCH_DATA_LIMIT_MB` is used up. | Raise it, or delete `proxy_bytes.json` in the state folder to count from zero. |
+| `proxy: proxy data limit reached` | `GSEARCH_DATA_LIMIT_MB` is used up. | Raise it, or delete `proxy_bytes.sqlite` in the state folder to count from zero. |
 | `parse_drift` | Google changed its page layout. | Update gsearch, or see [CONTRIBUTING.md](CONTRIBUTING.md#when-google-changes-its-page). |
 | `GSEARCH_ENV_FILE=… does not exist` | The settings path is wrong. | Use an absolute path. gsearch refuses to start rather than fall back to your own IP. |
 | `the Camoufox browser is not installed` | The browser has not been downloaded yet. | Run `gsearch setup` once. |

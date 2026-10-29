@@ -60,10 +60,11 @@ async def locate_exit(proxy_url: str | None = None, *, attempts: int = 2) -> Pla
     """
     for attempt in range(attempts):
         try:
+            # Camoufox caches public_ip per proxy URL; a relay keeps its URL while its exit IP changes.
             ip = (
-                await asyncio.to_thread(public_ip, proxy_url)
+                await asyncio.to_thread(public_ip.__wrapped__, proxy_url)
                 if proxy_url
-                else await asyncio.to_thread(public_ip)
+                else await asyncio.to_thread(public_ip.__wrapped__)
             )
             break
         except Exception:

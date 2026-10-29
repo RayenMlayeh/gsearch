@@ -122,9 +122,11 @@ class FakeBrowser:
         self.resolves = 0
         self.blocks: list[str] = []
         self.parked = 0
+        self.admitted: list[bool] = []
 
-    async def fetch(self, req: SearchRequest) -> FetchedPage:
+    async def fetch(self, req: SearchRequest, *, admitted: bool = False) -> FetchedPage:
         self.fetches += 1
+        self.admitted.append(admitted)
         self.searches += 1
         return FetchedPage(
             url=f"{self.config.base_url}/search?q=x",
@@ -160,9 +162,6 @@ class FakeBrowser:
 
     async def close_session(self) -> None:
         self.parked += 1
-
-    async def resolve_links(self, links: list[str]) -> dict[str, str | None]:
-        return dict.fromkeys(links)
 
     def status(self) -> dict[str, Any]:
         return {"identity": "fake"}
@@ -291,6 +290,7 @@ async def test_gate_over_http_remints_in_browser(fake: tuple[str, Seen]) -> None
         assert isinstance(resp, SearchResponse)  # served by the browser fallback
         assert browser.fetches == 2
         assert fetcher.stats["remints"] == 1
+        assert browser.admitted == [False, True]  # the redone search does not take a second token
     finally:
         await fetcher.aclose()
 

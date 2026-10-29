@@ -6,6 +6,7 @@ The browser test launches real headless Camoufox (~20 s). Skip with GSEARCH_SKIP
 from __future__ import annotations
 
 import dataclasses
+import json
 import os
 import threading
 import time
@@ -34,8 +35,6 @@ SUBMIT_ON_ENTER = (
     "<script>document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.name === 'q')"
     " { e.preventDefault(); e.target.form.submit(); } });</script>"
 )
-ASSET_HITS: list[str] = []  # every request the destination site receives; resolution must cause none
-GOTO_HEADERS: list[dict[str, str]] = []  # request headers of every /goto, to check click semantics
 PAGE_HITS: list[dict[str, str]] = []  # path and headers of every homepage and /search request
 HOME = (
     "<html><body><form action='/search' method='get'><textarea name='q'></textarea>"
@@ -56,17 +55,10 @@ def _serve(handler: type[BaseHTTPRequestHandler]) -> ThreadingHTTPServer:
 
 
 @pytest.fixture(scope="module")
-def fake_google() -> Iterator[tuple[str, str]]:
+def fake_google() -> Iterator[str]:
     # Minimized fixtures have no stylesheet, so blocks overlap and intercept clicks (live Google has its CSS).
     # This rule stands in for the missing layout: only links take pointer events.
     clickable = "<style>*{pointer-events:none!important} a, textarea{pointer-events:auto!important}</style>"
-    # Like live Google: on mousedown, a /goto href is rewritten to /url?sa=t&...&url=<blob>.
-    rewrite = (
-        "<script>document.addEventListener('mousedown', e => { const a = e.target.closest('a');"
-        " if (a && a.getAttribute('href').startsWith('/goto?')) { const blob = new URL(a.href).searchParams"
-        ".get('url'); a.setAttribute('href', '/url?sa=t&source=web&url=' + blob + '&ved=X'); } },"
-        " true);</script>"
-    )
     # Like live Google: every results page links to the consent page from its account menu, with the
     # country Google placed the visitor in. That link is not the consent dialog.
     account_menu = (
@@ -75,24 +67,9 @@ def fake_google() -> Iterator[tuple[str, str]]:
     serp = (
         fixture_by_id("c3-paa")
         .html()
-        .replace("</body>", clickable + rewrite + SUBMIT_ON_ENTER + account_menu + "</body>")
+        .replace("</body>", clickable + SUBMIT_ON_ENTER + account_menu + "</body>")
     )
     sorry = (FIXTURES / "synthetic" / "sorry-captcha.html").read_text(encoding="utf-8")
-
-    class Landing(BaseHTTPRequestHandler):
-        def do_GET(self) -> None:
-            ASSET_HITS.append(self.path)  # any request at all to the destination site
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(
-                b"<html><body>landing<img src='/asset.png'><script src='/asset.js'></script></body></html>"
-            )
-
-        def log_message(self, *args: object) -> None:
-            pass
-
-    landing = _serve(Landing)
-    landing_base = f"http://127.0.0.1:{landing.server_address[1]}"
 
     class Google(BaseHTTPRequestHandler):
         def _send(self, status: int, body: str = "", location: str | None = None) -> None:
@@ -122,17 +99,6 @@ def fake_google() -> Iterator[tuple[str, str]]:
                 self._send(429, sorry)
             elif parts.path == "/search":
                 self._send(200, serp)
-            elif parts.path in ("/goto", "/url"):
-                GOTO_HEADERS.append({"path": self.path, **{k.lower(): v for k, v in self.headers.items()}})
-                dest = f"{landing_base}/landing/{q['url'][0]}"
-                if parts.path == "/goto":  # DOM href: plain server redirect
-                    self._send(302, location=dest)
-                else:  # clicked, rewritten form: 200 interstitial like live Google
-                    self._send(
-                        200,
-                        f'<html><head><noscript><meta content="0;url={dest}"'
-                        ' http-equiv="refresh"></noscript></head></html>',
-                    )
             else:
                 self._send(404, "not found")
 
@@ -140,9 +106,8 @@ def fake_google() -> Iterator[tuple[str, str]]:
             pass
 
     google = _serve(Google)
-    yield f"http://127.0.0.1:{google.server_address[1]}", landing_base
+    yield f"http://127.0.0.1:{google.server_address[1]}"
     google.shutdown()
-    landing.shutdown()
 
 
 def _config(tmp_path: Path, base_url: str, **policy: float | int | str) -> object:
@@ -158,8 +123,6 @@ def _config(tmp_path: Path, base_url: str, **policy: float | int | str) -> objec
                 "burst": 5.0,
                 "think_min_s": 0.01,
                 "think_max_s": 0.02,
-                "resolve_gap_min_s": 0.01,
-                "resolve_gap_max_s": 0.02,
                 **policy,
             }  # type: ignore[arg-type]
         ),
@@ -217,33 +180,16 @@ async def test_hourly_budget_refuses_instead_of_blocking(tmp_path: Path) -> None
 
 
 @pytest.mark.skipif(os.environ.get("GSEARCH_SKIP_BROWSER") == "1", reason="GSEARCH_SKIP_BROWSER=1")
-async def test_live_backend_against_local_fake_google(tmp_path: Path, fake_google: tuple[str, str]) -> None:
-    base_url, landing_base = fake_google
+async def test_live_backend_against_local_fake_google(tmp_path: Path, fake_google: str) -> None:
+    base_url = fake_google
     fetcher = camoufox_backend.CamoufoxFetcher(_config(tmp_path, base_url))
     client = SearchClient(fetcher)
     try:
-        # 1. typed search in a warm session, results parsed, every /goto resolved from its 302
-        resp = await client.search(SearchRequest(query="what is asyncio in python", resolve_links=True))
+        # 1. typed search in a warm session, results parsed
+        resp = await client.search(SearchRequest(query="what is asyncio in python"))
         assert isinstance(resp, SearchResponse), resp
         assert resp.meta.backend == "camoufox"
         assert len(resp.organic) == 8
-        for r in resp.organic:
-            assert r.url is not None
-            assert str(r.url).startswith(f"{landing_base}/landing/FIXTURE_")
-        links = len(resp.organic) + sum(len(b.links) for b in resp.answer_boxes)
-        assert fetcher.status()["resolves_today"] == links
-        assert ASSET_HITS == []  # the destination site was never contacted (interstitial navigation aborted)
-        # Real-click semantics: same-origin, user-activated navigation with the results page as
-        # referrer; never the scripted "Sec-Fetch-Site: none + Referer" combination.
-        assert len(GOTO_HEADERS) == links
-        clicked = [h for h in GOTO_HEADERS if h["path"].startswith("/url?sa=t")]
-        assert len(clicked) >= len(resp.organic)
-        assert all("referer" not in h for h in GOTO_HEADERS if h not in clicked)
-        for h in clicked:
-            assert h.get("sec-fetch-site") == "same-origin", h
-            assert h.get("sec-fetch-mode") == "navigate"
-            assert h.get("sec-fetch-user") == "?1"
-            assert h.get("referer", "").startswith(base_url + "/search")
 
         # 2. a CAPTCHA rests the identity and closes the session (next one is a fresh device)
         blocked = await client.search(SearchRequest(query="trigger captcha"))
@@ -265,11 +211,11 @@ async def test_live_backend_against_local_fake_google(tmp_path: Path, fake_googl
 
 @pytest.mark.skipif(os.environ.get("GSEARCH_SKIP_BROWSER") == "1", reason="GSEARCH_SKIP_BROWSER=1")
 async def test_address_bar_entry_searches_like_a_typed_firefox_query(
-    tmp_path: Path, fake_google: tuple[str, str]
+    tmp_path: Path, fake_google: str
 ) -> None:
     """entry="address_bar": no homepage; the first request is Firefox's own address-bar search URL with
-    typed-navigation headers (no Referer); results and links work as usual. Real-device preset on."""
-    base_url, landing_base = fake_google
+    typed-navigation headers (no Referer); results parse as usual. Real-device preset on."""
+    base_url = fake_google
     cfg = dataclasses.replace(
         _config(tmp_path, base_url),  # type: ignore[type-var]
         identity="address-bar-test",
@@ -279,11 +225,8 @@ async def test_address_bar_entry_searches_like_a_typed_firefox_query(
     fetcher = camoufox_backend.CamoufoxFetcher(cfg)
     PAGE_HITS.clear()
     try:
-        resp = await SearchClient(fetcher).search(
-            SearchRequest(query="what is asyncio in python", resolve_links=True)
-        )
-        assert isinstance(resp, SearchResponse), resp
-        assert all(str(r.url).startswith(f"{landing_base}/landing/") for r in resp.organic)
+        resp = await SearchClient(fetcher).search(SearchRequest(query="what is asyncio in python"))
+        assert isinstance(resp, SearchResponse) and len(resp.organic) == 8, resp
         first = PAGE_HITS[0]
         assert first["path"] == "/search?client=firefox-b-d&q=what+is+asyncio+in+python", PAGE_HITS
         assert first.get("sec-fetch-site") == "none" and "referer" not in first
@@ -294,9 +237,9 @@ async def test_address_bar_entry_searches_like_a_typed_firefox_query(
 
 @pytest.mark.skipif(os.environ.get("GSEARCH_SKIP_BROWSER") == "1", reason="GSEARCH_SKIP_BROWSER=1")
 async def test_consent_dialog_is_rejected_unless_google_places_the_exit_elsewhere(
-    tmp_path: Path, fake_google: tuple[str, str]
+    tmp_path: Path, fake_google: str
 ) -> None:
-    base_url, _ = fake_google
+    base_url = fake_google
     cfg = dataclasses.replace(_config(tmp_path, base_url), entry="address_bar")  # type: ignore[type-var]
     fetcher = camoufox_backend.CamoufoxFetcher(cfg)
     try:
@@ -320,10 +263,8 @@ async def test_consent_dialog_is_rejected_unless_google_places_the_exit_elsewher
 
 
 @pytest.mark.skipif(os.environ.get("GSEARCH_SKIP_BROWSER") == "1", reason="GSEARCH_SKIP_BROWSER=1")
-async def test_a_new_device_warms_up_before_its_first_search(
-    tmp_path: Path, fake_google: tuple[str, str]
-) -> None:
-    base_url, _ = fake_google
+async def test_a_new_device_warms_up_before_its_first_search(tmp_path: Path, fake_google: str) -> None:
+    base_url = fake_google
     cfg = dataclasses.replace(
         _config(tmp_path, base_url, warmup_dwell_min_s=0.01, warmup_dwell_max_s=0.02),  # type: ignore[type-var]
         identity="warmup-test",
@@ -333,9 +274,7 @@ async def test_a_new_device_warms_up_before_its_first_search(
     fetcher = camoufox_backend.CamoufoxFetcher(cfg)
     PAGE_HITS.clear()
     try:
-        resp = await SearchClient(fetcher).search(
-            SearchRequest(query="what is asyncio in python", resolve_links=True)
-        )
+        resp = await SearchClient(fetcher).search(SearchRequest(query="what is asyncio in python"))
         assert isinstance(resp, SearchResponse), resp
         assert [h["path"] for h in PAGE_HITS[:2]] == [
             "/?warm=1",
@@ -388,3 +327,33 @@ async def test_behind_a_proxy_a_rest_belongs_to_the_exit_ip(tmp_path: Path) -> N
     await new.admit()
     await same.aclose()
     await new.aclose()
+
+
+async def test_behind_a_proxy_two_ports_on_one_ip_share_its_budget(tmp_path: Path) -> None:
+    place = Place(ip="203.0.113.7", country="US", timezone="America/Chicago", locale="en-US")
+
+    def fetcher(identity: str) -> Any:
+        cfg = _config(tmp_path, "http://127.0.0.1:9", searches_per_hour=1.0, burst=1.0)
+        return camoufox_backend.CamoufoxFetcher(
+            dataclasses.replace(cfg, identity=identity, proxy_url="http://127.0.0.1:1", place=place)  # type: ignore[type-var]
+        )
+
+    port_a, port_b = fetcher("proxy-a"), fetcher("proxy-b")
+    await port_a.admit()
+    with pytest.raises(FetchError, match="hourly budget"):
+        await port_b.admit()
+    await port_a.aclose()
+    await port_b.aclose()
+
+
+def test_a_device_without_webgl_data_is_drawn_again(monkeypatch: pytest.MonkeyPatch) -> None:
+    draws = iter([ValueError('No WebGL data found for vendor "Google Inc. (Intel)"'), {"cpu": 8}])
+
+    def launch_options(**_: object) -> dict[str, Any]:
+        draw = next(draws)
+        if isinstance(draw, Exception):
+            raise draw
+        return {"env": {"CAMOU_CONFIG_1": json.dumps(draw)}}
+
+    monkeypatch.setattr(camoufox_backend, "launch_options", launch_options)
+    assert camoufox_backend.device_config({"headless": True}) == {"cpu": 8}

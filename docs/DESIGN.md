@@ -33,7 +33,8 @@ A live search with a rotating proxy:
    for it. The relay holds the proxy login (HTTP, HTTPS or SOCKS5) and meters every byte against the data
    limit.
 2. The exit is located through the relay (a few KB). It is dropped if it does not answer, or if it is
-   outside the country the login asks for.
+   outside the country the login asks for (for a static proxy without one: the country it was first seen
+   in).
 3. Camoufox launches with a real-device fingerprint preset, the exit's locale and geolocation, and WebRTC
    blocked, in a visible window (a virtual display on a Linux server). It types the query into Firefox's
    address bar: no homepage visit, no Referer.
@@ -51,7 +52,9 @@ instead, used in turn, each with the own-IP budget, and rest until midnight afte
 stay out of the agent's tool calls: the MCP server readies two exits in the background from the start (a new
 device's warm-up, then one everyday search to open the session), searches go to a ready exit first, and a
 search waits at most 15 s for one before it returns `rate_limited` with a short `retry_after_s`. Each exit's
-IP is looked up again every 3 minutes, alongside a search, because sticky logins change IP on their own.
+IP is looked up again every 3 minutes, alongside a search, because sticky logins change IP on their own; an
+exit that has moved to another country is dropped. Budget and rest belong to the exit IP, so two ports on
+one IP share one budget.
 
 ## Decisions
 
@@ -61,9 +64,10 @@ Numbered so the findings can cite them.
   served (F-0001). It is a dependency (MPL-2.0), installed by pip, never vendored.
 - **D-002 No official-API backend.** Google's Custom Search JSON API is closed to new customers and ends on
   2027-01-01 (F-0005). The `Fetcher` interface stays open for one.
-- **D-003 Proxies go through a local relay.** The browser and the HTTP client both use `127.0.0.1` without
-  credentials. One relay per identity means both tiers share one exit IP, the bytes counted are the bytes
-  billed, and a persisted limit holds across runs. The relay speaks HTTP, HTTPS and SOCKS5 upstream, so any
+- **D-003 Proxies go through a local relay.** The browser and the HTTP client both use `127.0.0.1` with a
+  random login of the relay's own, never the proxy's, so no other program on the machine can use the proxy
+  through it. One relay per identity means both tiers share one exit IP, the bytes counted are the bytes
+  billed, and a limit kept in SQLite holds across runs and across servers running at once. The relay speaks HTTP, HTTPS and SOCKS5 upstream, so any
   proxy works, in any common format.
 - **D-004 No token forging; no CAPTCHA solving shipped.** Results need a cookie that Google's obfuscated
   JavaScript VM computes (F-0002). Rebuilding that VM is the conduct at issue in *Google v. SerpApi*
