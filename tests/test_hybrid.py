@@ -171,7 +171,7 @@ async def test_first_search_mints_in_browser_then_http_with_browser_headers(fake
     fetcher = hybrid.HybridFetcher(browser)
     client = SearchClient(fetcher)
     try:
-        first = await client.search(SearchRequest(query="what is asyncio in python"))
+        first = await client.search(SearchRequest(query="what is asyncio in python", resolve_links=True))
         assert isinstance(first, SearchResponse) and first.meta.backend == "camoufox"
         assert browser.fetches == 1
 
@@ -234,14 +234,16 @@ async def test_result_urls_resolved_over_http_from_302(fake: tuple[str, Seen]) -
     fetcher = hybrid.HybridFetcher(browser)
     client = SearchClient(fetcher)
     try:
-        resp = await client.search(SearchRequest(query="what is asyncio in python"))
+        resp = await client.search(SearchRequest(query="what is asyncio in python", resolve_links=True))
         assert isinstance(resp, SearchResponse)
         assert all(str(r.url).startswith("https://destination.example/FIXTURE_") for r in resp.organic)
         assert browser.resolves == len(resp.organic) + sum(len(b.links) for b in resp.answer_boxes)
         assert all(x.url is not None for b in resp.answer_boxes for x in b.links)
         assert seen.destination_hits == 0  # Location was read, never followed
 
-        await client.search(SearchRequest(query="python asyncio tutorial"))  # links after an HTTP search
+        await client.search(
+            SearchRequest(query="python asyncio tutorial", resolve_links=True)
+        )  # links after HTTP
         gotos = [dict((k.lower(), v) for k, v in h) for p, h in seen.requests if p.startswith("/goto")]
         assert gotos and all("cookie" not in h for h in gotos)  # links never carry the session
     finally:

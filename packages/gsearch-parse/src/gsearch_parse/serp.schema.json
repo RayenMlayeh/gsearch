@@ -569,6 +569,12 @@
               "title": "Query",
               "type": "string"
             },
+            "resolve_links": {
+              "default": false,
+              "description": "Also follow every result's Google redirect to fill `url`: slower, and one more request to Google per link. Off: read a result by passing its `link` to fetch_page.",
+              "title": "Resolve Links",
+              "type": "boolean"
+            },
             "site": {
               "anyOf": [
                 {

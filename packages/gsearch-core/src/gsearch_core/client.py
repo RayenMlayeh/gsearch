@@ -85,9 +85,13 @@ class SearchClient:
         result = parse_page(page.html, url=page.url, status=page.status, headers=page.headers, page=req.page)
         if result.state in (PageState.OK, PageState.EMPTY_VALID) and result.data is not None:
             data = result.data
-            resolved = await self._resolve(
-                [str(r.link) for r in data.organic if r.url is None]
-                + [str(x.link) for b in data.answer_boxes for x in b.links if x.url is None]
+            resolved = (
+                await self._resolve(
+                    [str(r.link) for r in data.organic if r.url is None]
+                    + [str(x.link) for b in data.answer_boxes for x in b.links if x.url is None]
+                )
+                if req.resolve_links
+                else None
             )
             organic = [_with_url(r, resolved) for r in data.organic]
             missing = sum(1 for r in organic if r.url is None) if resolved is not None else 0

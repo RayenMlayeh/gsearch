@@ -41,7 +41,8 @@ A live search with a rotating proxy:
    choice. If Google places the exit in another country than its IP, the exit is dropped. On a CAPTCHA,
    the exit is retired and the search retried on a fresh one, up to 4 exits.
 5. On results, the session's cookies and headers move to `curl_cffi` (same relay, same exit, matching TLS
-   ClientHello), which resolves every `/goto` link from its redirect without loading the destination.
+   ClientHello). `/goto` links are followed when the agent reads a page; with `resolve_links`, all of them are
+   resolved from their redirects on a connection without the session's cookies, never loading the destination.
 6. Everything for that exit is closed. The next search starts again at step 1.
 
 Static proxies (no session id in the login, e.g. a VPS or datacenter list) keep one warm session per IP

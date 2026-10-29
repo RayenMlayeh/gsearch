@@ -29,6 +29,11 @@ class SearchRequest(_Model):
     )
     time_range: TimeRange | None = Field(None, description="Past hour/day/week/month/year (tbs=qdr:x).")
     site: str | None = Field(None, max_length=253, description="Restrict to a domain (adds site:).")
+    resolve_links: bool = Field(
+        False,
+        description="Also follow every result's Google redirect to fill `url`: slower, and one more request "
+        "to Google per link. Off: read a result by passing its `link` to fetch_page.",
+    )
 
     def effective_query(self) -> str:
         return f"{self.query} site:{self.site}" if self.site else self.query

@@ -24,9 +24,9 @@
 
 <h3 align="center">Real Google Search for your AI agent. No API key. Self-hosted. Over MCP.</h3>
 
-Your agent calls `google_search` and gets Google's actual results page as typed JSON: every link resolved to
-its real URL, plus Google's answer boxes (sports results, top stories, videos), the AI Overview, People
-also ask and related searches. A real Firefox
+Your agent calls `google_search` and gets Google's actual results page as typed JSON: every result with its
+title, snippet and site, plus Google's answer boxes (sports results, top stories, videos), the AI Overview,
+People also ask and related searches. A real Firefox
 ([Camoufox](https://github.com/daijro/camoufox)) runs Google's page as it is, on your own IP or through any
 proxy you already have.
 
@@ -133,8 +133,8 @@ Google's official search API is closed to new customers and shuts down on 1 Janu
 
 - 🦊 **A real browser, not a scraper.** Camoufox, a hardened Firefox, runs Google's page as it is, with a
   real-device fingerprint and a locale that matches its IP.
-- 🔗 **Real URLs.** Google hides result links behind `/goto` redirects. gsearch resolves every one to the
-  page it points to, without loading that page.
+- 🔗 **Real pages.** Google hides result links behind `/goto` redirects. `fetch_page` follows one to the
+  page it points to when the agent reads it; `resolve_links` resolves them all up front instead.
 - 🤖 **Built for agents.** One MCP server: search, page reading and status, typed JSON. Blocks come back as clear errors with
   `retry_after_s`, never as empty results, and every string is flagged as untrusted web content.
 - 🌍 **Any proxy, any format.** Rotating residential, static VPS or datacenter lists, HTTP, HTTPS or SOCKS5,
@@ -159,7 +159,7 @@ A block is never an empty list. It comes back as an error that says what happene
 
 | Field | What it holds |
 |---|---|
-| `organic[].url` | The real destination of each result, resolved from Google's `/goto` redirect in the same session. |
+| `organic[].url` | The real destination of each result, with `resolve_links`; otherwise null, and `link` goes to `fetch_page`. |
 | `organic[].title`, `snippet`, `date`, `domain`, `display_url` | What the result shows, as text. `link` keeps the exact link Google served. |
 | `organic[].sitelinks`, `source_meta` | A result's sub-links, and what Google shows instead of a URL on forum and video results (`2 years ago`). |
 | `ai_overview` | The AI Overview text and its sources, when Google shows one. |
@@ -182,8 +182,8 @@ Error codes: `captcha`, `soft_block`, `hard_block`, `consent_wall`, `js_gate`, `
   ([F-0015](docs/findings/F-0015-b1-residential-proxy-benchmark.md)). The query is typed into the address
   bar. WebRTC is off, so your own IP can't leak around the proxy.
 - **Never forged.** gsearch never generates or alters Google's tokens: the browser runs the page as it is.
-- **Cheap links.** Links are resolved on the same IP with the same cookies and a TLS fingerprint matching the
-  browser's ([F-0011](docs/findings/F-0011-goto-resolution-leak-and-fix.md),
+- **Cheap links.** Links are resolved only when asked, on the same IP without the search session's cookies,
+  with a TLS fingerprint matching the browser's ([F-0011](docs/findings/F-0011-goto-resolution-leak-and-fix.md),
   [F-0013](docs/findings/F-0013-tls-camoufox-vs-curl-cffi.md)).
 - **Runs on servers.** On a Linux machine without a screen, the browser uses a virtual display
   automatically (`sudo apt install xvfb`).
@@ -252,8 +252,7 @@ python tools/benchmark.py -n 10
 | `GSEARCH_STATE_DIR` | Where budgets, the data meter and saved block pages live. Default: `%LOCALAPPDATA%\gsearch` or `~/.local/share/gsearch`. |
 
 Everything else is fixed to what worked best in testing: a new IP per search with rotating proxies, a
-visible browser, address-bar search, real-device fingerprints, 4 attempts per search, always resolving URLs,
-and a 10-minute cache for repeated queries.
+visible browser, address-bar search, real-device fingerprints, 4 attempts per search, and a 10-minute cache for repeated queries.
 
 </details>
 

@@ -59,7 +59,9 @@ def _error_result(err: SearchError) -> CallToolResult:
 def _summary(resp: SearchResponse) -> str:
     lines = [f"{len(resp.organic)} organic results ({resp.meta.backend}, state={resp.meta.page_state})."]
     for r in resp.organic:
-        lines.append(f"{r.position}. {r.title} - {r.url or r.display_url or r.link}")
+        lines.append(
+            f"{r.position}. {r.title} ({r.domain or r.source_meta or 'no domain'}) - {r.url or r.link}"
+        )
     for box in resp.answer_boxes:
         lines.append(f"[{box.title}] {box.text[:300]}")
         lines.extend(f"  - {x.title} - {x.url or x.link}" for x in box.links)
@@ -92,9 +94,11 @@ def build_server(client: SearchClient, *, live: bool) -> MCPServer:
             "returns raw HTML. For news, sports and events, read answer_boxes first: they carry the latest "
             "facts. For 'today' or 'tonight' questions, do not set time_range; it hides schedule pages. "
             "Before answering, open the most relevant result or box links with fetch_page instead of "
-            "relying on snippets. Set lang (e.g. 'en') to choose the interface language. On a block, "
-            "returns an error with `code` (captcha, soft_block, hard_block, consent_wall, "
-            "js_gate, rate_limited, parse_drift, ...) and `retry_after_s`. " + UNTRUSTED
+            "relying on snippets: pass a result's `url`, or its `link` when `url` is null, and fetch_page "
+            "follows Google's redirect. Set resolve_links only when you need every real URL up front: it "
+            "is slower and sends Google one request per link. Set lang (e.g. 'en') to choose the interface "
+            "language. On a block, returns an error with `code` (captcha, soft_block, hard_block, "
+            "consent_wall, js_gate, rate_limited, parse_drift, ...) and `retry_after_s`. " + UNTRUSTED
         ),
         annotations=ToolAnnotations(read_only_hint=True, open_world_hint=True, idempotent_hint=True),
     )
@@ -109,10 +113,21 @@ def build_server(client: SearchClient, *, live: bool) -> MCPServer:
         country: Annotated[str | None, Field(description="Two-letter country code, e.g. 'us'.")] = None,
         time_range: Annotated[TimeRange | None, Field(description="h, d, w, m or y.")] = None,
         site: Annotated[str | None, Field(description="Restrict results to this domain.")] = None,
+        resolve_links: Annotated[
+            bool,
+            Field(description="Fill every result's `url` now (slower). Default: leave it to fetch_page."),
+        ] = False,
     ) -> Annotated[CallToolResult, SearchResponse]:
         try:
             req = SearchRequest(
-                query=query, num=num, page=page, lang=lang, country=country, time_range=time_range, site=site
+                query=query,
+                num=num,
+                page=page,
+                lang=lang,
+                country=country,
+                time_range=time_range,
+                site=site,
+                resolve_links=resolve_links,
             )
         except ValidationError as exc:
             return _error_result(
@@ -137,7 +152,8 @@ def build_server(client: SearchClient, *, live: bool) -> MCPServer:
         title="Fetch page",
         description=(
             "Fetch a public web page (http or https, HTML or plain text) and return its readable text and "
-            "the links in its main content. Use it to read pages found with google_search. Text is cut at "
+            "the links in its main content. Use it to read pages found with google_search; a result's "
+            "Google `link` works too. Text is cut at "
             "30,000 characters. Goes through the configured proxy, so it counts against the data limit. "
             + UNTRUSTED
         ),

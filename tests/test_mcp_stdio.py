@@ -37,6 +37,7 @@ async def test_tools_are_listed_with_schemas(mcp_client: Client) -> None:
         "country",
         "time_range",
         "site",
+        "resolve_links",
     }
     assert search.input_schema["required"] == ["query"]
     assert search.output_schema is not None and "organic" in search.output_schema["properties"]

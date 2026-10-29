@@ -88,9 +88,17 @@ class _ResolvingFixtures(FixtureFetcher):
 
 
 async def test_answer_box_links_are_resolved_like_results() -> None:
-    resp = await SearchClient(_ResolvingFixtures(GECKO)).search(SearchRequest(query="nobel prize 2026"))
+    req = SearchRequest(query="nobel prize 2026", resolve_links=True)
+    resp = await SearchClient(_ResolvingFixtures(GECKO)).search(req)
     assert isinstance(resp, SearchResponse)
     stories = resp.answer_boxes[0]
     assert stories.title == "Top stories"
     assert all(str(x.url).startswith("https://news.example/") for x in stories.links)
     assert all(r.url is not None for r in resp.organic)
+
+
+async def test_links_are_left_to_fetch_page_unless_asked() -> None:
+    resp = await SearchClient(_ResolvingFixtures(GECKO)).search(SearchRequest(query="nobel prize 2026"))
+    assert isinstance(resp, SearchResponse)
+    assert all(r.url is None for r in resp.organic)  # no request to Google per link
+    assert not resp.meta.warnings

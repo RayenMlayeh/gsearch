@@ -216,7 +216,7 @@ async def test_live_backend_against_local_fake_google(tmp_path: Path, fake_googl
     client = SearchClient(fetcher)
     try:
         # 1. typed search in a warm session, results parsed, every /goto resolved from its 302
-        resp = await client.search(SearchRequest(query="what is asyncio in python"))
+        resp = await client.search(SearchRequest(query="what is asyncio in python", resolve_links=True))
         assert isinstance(resp, SearchResponse), resp
         assert resp.meta.backend == "camoufox"
         assert len(resp.organic) == 8
@@ -272,7 +272,9 @@ async def test_address_bar_entry_searches_like_a_typed_firefox_query(
     fetcher = camoufox_backend.CamoufoxFetcher(cfg)
     PAGE_HITS.clear()
     try:
-        resp = await SearchClient(fetcher).search(SearchRequest(query="what is asyncio in python"))
+        resp = await SearchClient(fetcher).search(
+            SearchRequest(query="what is asyncio in python", resolve_links=True)
+        )
         assert isinstance(resp, SearchResponse), resp
         assert all(str(r.url).startswith(f"{landing_base}/landing/") for r in resp.organic)
         first = PAGE_HITS[0]
@@ -324,7 +326,9 @@ async def test_a_new_device_warms_up_before_its_first_search(
     fetcher = camoufox_backend.CamoufoxFetcher(cfg)
     PAGE_HITS.clear()
     try:
-        resp = await SearchClient(fetcher).search(SearchRequest(query="what is asyncio in python"))
+        resp = await SearchClient(fetcher).search(
+            SearchRequest(query="what is asyncio in python", resolve_links=True)
+        )
         assert isinstance(resp, SearchResponse), resp
         assert [h["path"] for h in PAGE_HITS[:2]] == [
             "/?warm=1",
