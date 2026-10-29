@@ -7,10 +7,12 @@ back to the browser / rests the identity. The real-browser path is covered by te
 
 from __future__ import annotations
 
+import tempfile
 import threading
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
@@ -21,6 +23,7 @@ from gsearch_parse.models import SearchError, SearchRequest, SearchResponse
 hybrid = pytest.importorskip("gsearch_core.hybrid")
 from gsearch_core.client import SearchClient  # noqa: E402
 from gsearch_core.fetch import FetchedPage  # noqa: E402
+from gsearch_core.geo import Place  # noqa: E402
 
 pytestmark = pytest.mark.anyio
 
@@ -72,6 +75,8 @@ def fake() -> Iterator[tuple[str, Seen]]:
                 self.send_header("Location", "/sorry/index?continue=/search")
                 self.end_headers()
                 return
+            elif parts.path == "/sorry/index":
+                body, status = "<html>IP address: 203.0.113.9</html>", 429
             else:
                 body, status = serp, 200
             self.send_response(status)
@@ -93,6 +98,8 @@ def fake() -> Iterator[tuple[str, Seen]]:
 class FakeConfig:
     base_url: str
     proxy_url: str | None = None
+    evidence_dir: Path = field(default_factory=lambda: Path(tempfile.mkdtemp(prefix="gsearch-evidence-")))
+    place: Any = None
 
 
 class FakeBrowser:
@@ -233,6 +240,30 @@ async def test_result_urls_resolved_over_http_from_302(fake: tuple[str, Seen]) -
         assert browser.resolves == len(resp.organic) + sum(len(b.links) for b in resp.answer_boxes)
         assert all(x.url is not None for b in resp.answer_boxes for x in b.links)
         assert seen.destination_hits == 0  # Location was read, never followed
+
+        await client.search(SearchRequest(query="python asyncio tutorial"))  # links after an HTTP search
+        gotos = [dict((k.lower(), v) for k, v in h) for p, h in seen.requests if p.startswith("/goto")]
+        assert gotos and all("cookie" not in h for h in gotos)  # links never carry the session
+    finally:
+        await fetcher.aclose()
+
+
+async def test_a_block_over_http_keeps_the_page_and_the_session_exit_ip(
+    fake: tuple[str, Seen], tmp_path: Path
+) -> None:
+    base, _ = fake
+    browser = FakeBrowser(base)
+    browser.config.evidence_dir = tmp_path
+    browser.config.place = Place(ip="198.51.100.7", country="GB", timezone="Europe/London", locale="en-GB")
+    fetcher = hybrid.HybridFetcher(browser)
+    client = SearchClient(fetcher)
+    try:
+        await client.search(SearchRequest(query="first"))
+        resp = await client.search(SearchRequest(query="block me"))
+        assert isinstance(resp, SearchError) and resp.evidence_ref is not None
+        folder = Path(resp.evidence_ref)
+        assert "IP address: 203.0.113.9" in (folder / "page.html").read_text(encoding="utf-8")
+        assert "session exit ip: 198.51.100.7" in (folder / "url.txt").read_text(encoding="utf-8")
     finally:
         await fetcher.aclose()
 

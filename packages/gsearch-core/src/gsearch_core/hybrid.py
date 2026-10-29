@@ -7,8 +7,9 @@ reuses it. Nothing here generates or alters a token.
 - TLS: curl_cffi `firefox147` plus a cipher override, which matches Camoufox's ClientHello.
 - Headers: copied from the browser's own last document request, in its order; only Referer, Sec-Fetch-*
   and Cookie are set per request.
-- Result URLs: one `/goto?url=<blob>` GET each, read from the 302 Location. The destination is never
-  requested.
+- Result URLs: one `/goto?url=<blob>` GET each, read from the 302 Location, on a connection of its own
+  without the session's cookies (a link token works from any client), so the session only ever searches.
+  The destination is never requested.
 - Any gate or block sends the work back to the browser tier. Budget and rest state are the browser
   identity's own, so the hybrid cannot outrun the identity's limits.
 - Once the session is adopted the browser is closed: an open results page keeps making background
@@ -20,7 +21,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+from datetime import datetime
 from typing import Any
+from urllib.parse import urljoin
 
 from curl_cffi.const import CurlOpt
 from curl_cffi.requests import AsyncSession
@@ -69,6 +72,7 @@ class HybridFetcher:
         self._rng = rng or random.Random()  # nosec B311 - jitter, not security
         self._lock = asyncio.Lock()
         self._http: AsyncSession[Any] | None = None
+        self._links_http: AsyncSession[Any] | None = None
         self._template: dict[str, str] = {}
         self._cookies: dict[str, str] = {}
         self._hl: str | None = None
@@ -92,14 +96,17 @@ class HybridFetcher:
         self._hl = exported["hl"]
         self._adopted = True
         if self._http is None:
-            self._http = AsyncSession(
-                impersonate=IMPERSONATE,
-                default_headers=False,
-                curl_options={CurlOpt.SSL_CIPHER_LIST: FIREFOX152_CIPHERS},
-                proxy=self.config.proxy_url,
-            )
+            self._http, self._links_http = self._session(), self._session()
         log.info("hybrid_session_adopted cookies=%s", sorted(self._cookies))
         return True
+
+    def _session(self) -> AsyncSession[Any]:
+        return AsyncSession(
+            impersonate=IMPERSONATE,
+            default_headers=False,
+            curl_options={CurlOpt.SSL_CIPHER_LIST: FIREFOX152_CIPHERS},
+            proxy=self.config.proxy_url,
+        )
 
     def _drop_session(self, reason: str) -> None:
         log.info("hybrid_session_dropped reason=%s", reason)
@@ -107,7 +114,7 @@ class HybridFetcher:
         self._template = {}
         self._adopted = False
 
-    def _headers(self) -> dict[str, str]:
+    def _headers(self, *, cookies: bool = True) -> dict[str, str]:
         """The browser's navigation headers, in its order, as a same-origin click from google.com."""
         out: dict[str, str] = {}
         for k, v in self._template.items():
@@ -121,7 +128,7 @@ class HybridFetcher:
                 # Firefox order (live HARs): ... Accept-Encoding, Referer, [Alt-Used, Connection], Cookie,
                 # Upgrade-Insecure-Requests, Sec-Fetch-*. Google's referrer policy sends only the origin.
                 out["referer"] = f"{GOOGLE_ORIGIN}/"
-                if self._cookies:
+                if cookies and self._cookies:
                     out["cookie"] = "; ".join(f"{name}={value}" for name, value in self._cookies.items())
         return out
 
@@ -163,6 +170,7 @@ class HybridFetcher:
             log.info("hybrid_http_search status=%s state=%s bytes=%s", resp.status_code, verdict.state, size)
             if verdict.state in _BLOCKS:
                 retry_after = self.browser.record_block(f"{verdict.state.value} (http)")
+                evidence = await self._save_evidence(verdict.state.value, str(resp.url), html, headers)
                 self._drop_session(verdict.state.value)
                 return FetchedPage(
                     url=str(resp.url),
@@ -172,6 +180,7 @@ class HybridFetcher:
                     backend="hybrid-http",
                     headers=headers,
                     block_retry_after_s=retry_after,
+                    evidence_ref=evidence,
                 )
             if verdict.state is PageState.JS_GATE:
                 # The session no longer satisfies the gate: re-open it in the real browser.
@@ -187,6 +196,27 @@ class HybridFetcher:
                 headers=headers,
             )
 
+    async def _save_evidence(self, label: str, url: str, html: str, headers: dict[str, str]) -> str | None:
+        """The blocked page (the /sorry page names the IP Google saw) and the exit IP the session began on.
+        A block over HTTP is a redirect to /sorry; it is followed once, as a browser would."""
+        try:
+            if (location := headers.get("location")) and self._http is not None:
+                url = urljoin(url, location)
+                html = (await self._http.get(url, headers=self._headers(), timeout=20)).text
+        except Exception:  # curl_cffi raises its own error types; keep the redirect without its page
+            log.info("hybrid_evidence_fetch_failed url=%s", url)
+        try:
+            stamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+            folder = self.config.evidence_dir / f"{stamp}-{label}-http"
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / "page.html").write_text(html, encoding="utf-8")
+            place = self.config.place
+            exit_ip = place.ip if place else "direct"
+            (folder / "url.txt").write_text(f"{url}\nsession exit ip: {exit_ip}\n", encoding="utf-8")
+            return str(folder)
+        except OSError:  # evidence is best effort; never turn a result into a failure
+            return None
+
     async def _browser_search(self, req: SearchRequest) -> FetchedPage:
         page = await self.browser.fetch(req)
         self.stats["browser_searches"] += 1
@@ -197,7 +227,7 @@ class HybridFetcher:
 
     # ------------------------------------------------------------ resolution
     async def resolve_links(self, links: list[str]) -> dict[str, str | None]:
-        if not self._adopted or self._http is None:
+        if not self._adopted or self._links_http is None:
             return await self.browser.resolve_links(links)
         sem = asyncio.Semaphore(RESOLVE_CONCURRENCY)
 
@@ -206,15 +236,17 @@ class HybridFetcher:
                 await asyncio.sleep(self._rng.uniform(0.05, 0.25))
                 target = link.replace(GOOGLE_ORIGIN, self.config.base_url, 1)
                 try:
-                    assert self._http is not None
-                    resp = await self._http.get(
-                        target, headers=self._headers(), allow_redirects=False, timeout=RESOLVE_TIMEOUT_S
+                    assert self._links_http is not None
+                    resp = await self._links_http.get(
+                        target,
+                        headers=self._headers(cookies=False),
+                        allow_redirects=False,
+                        timeout=RESOLVE_TIMEOUT_S,
                     )
                 except Exception as exc:  # a failed resolution must never fail the search
                     log.warning("hybrid_resolve_failed error=%s", type(exc).__name__)
                     return link, None
                 self.browser.record_resolve()
-                self._absorb_cookies(resp)
                 self.stats["http_bytes"] += len(resp.content)
                 if 300 <= resp.status_code < 400:
                     return link, resp.headers.get("location")
@@ -228,6 +260,7 @@ class HybridFetcher:
         return {**self.browser.status(), **self.stats, "http_session": self._adopted}
 
     async def aclose(self) -> None:
-        if self._http is not None:
-            await self._http.close()
+        for http in (self._http, self._links_http):
+            if http is not None:
+                await http.close()
         await self.browser.aclose()
