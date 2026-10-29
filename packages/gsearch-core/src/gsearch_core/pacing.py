@@ -18,6 +18,8 @@ class PacingPolicy:
     think_max_s: float = 9.0
     resolve_gap_min_s: float = 0.8
     resolve_gap_max_s: float = 2.5
+    warmup_dwell_min_s: float = 20.0
+    warmup_dwell_max_s: float = 45.0
 
 
 def lognormal_between(rng: random.Random, low: float, high: float, sigma: float = 0.45) -> float:

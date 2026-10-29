@@ -50,7 +50,7 @@ def fetcher_from_env(env: Mapping[str, str] | None = None) -> tuple[Fetcher, boo
     if fixtures := env.get("GSEARCH_FIXTURES_DIR"):
         return FixtureFetcher(Path(fixtures)), False
 
-    from .camoufox_backend import CamoufoxConfig, CamoufoxFetcher, state_dir
+    from .camoufox_backend import WARMUP_PAGES, CamoufoxConfig, CamoufoxFetcher, state_dir
     from .hybrid import HybridFetcher
 
     state = Path(env["GSEARCH_STATE_DIR"]) if env.get("GSEARCH_STATE_DIR") else state_dir()
@@ -68,11 +68,12 @@ def fetcher_from_env(env: Mapping[str, str] | None = None) -> tuple[Fetcher, boo
 
     limit = env.get("GSEARCH_DATA_LIMIT_MB")
     # Behind proxies: a visible browser (headless sessions drew far more CAPTCHAs on residential exits),
-    # queries typed into the address bar, real-device fingerprints.
+    # queries typed into the address bar, real-device fingerprints, a warm-up for each new device.
     browser = CamoufoxConfig(
         headless=False,
         entry="address_bar",
         fingerprint_preset=True,
+        warmup=WARMUP_PAGES,
         state_path=state / "state.sqlite",
         evidence_dir=state / "evidence",
     )

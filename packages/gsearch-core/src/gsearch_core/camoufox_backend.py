@@ -52,6 +52,16 @@ RESULTS_READY_JS = (
 )
 CLICK_TIMEOUT_MS = 5_000
 REJECT_ALL = "#W0wltc"  # "Reject all" in Google's consent dialog, same id in every language
+# Ordinary pages a new device opens before its first search: a fresh browser on a fresh exit is refused on
+# its first search far more often (nodemaven/google-browser-scraper's "light" ladder; google.com comes
+# first among Google's pages so its consent dialog is answered there).
+WARMUP_PAGES = (
+    "https://www.theverge.com/",
+    "https://www.wikihow.com/Main-Page",
+    "https://www.google.com/imghp?hl=en",
+    "https://translate.google.com/?hl=en",
+    "https://scholar.google.com/?hl=en",
+)
 # What Firefox on Windows sends when a query is typed into the address bar with Google as search engine:
 # a typed navigation (Sec-Fetch-Site: none, no Referer), with no homepage visit before it.
 ADDRESS_BAR_SEARCH = "{base}/search?client=firefox-b-d&q={q}"
@@ -158,6 +168,7 @@ class CamoufoxConfig:
     persist_profile: bool = (
         True  # same device and Google cookies across launches; off for one-shot identities
     )
+    warmup: tuple[str, ...] = ()  # pages a lasting device without Google cookies opens before searching
 
 
 class CamoufoxFetcher:
@@ -274,13 +285,16 @@ class CamoufoxFetcher:
         self._place = place
         browser = await self._launch(cfg, place)
         self._context = await browser.new_context()
-        if cfg.persist_profile and (cookies := self._profile().get("cookies")):
-            await self._context.add_cookies([c for c in cookies if c.get("expires", -1) > self._wall()])
+        cookies = [c for c in self._profile().get("cookies", []) if c.get("expires", -1) > self._wall()]
+        if cfg.persist_profile and cookies:
+            await self._context.add_cookies(cookies)
         self._page = await self._context.new_page()
         self._page.on("response", self._on_response)
         self._page.on("request", self._on_request)
         self._session_hl = hl_hint or (place.language if place else "en")
         self._searches_in_session = 0
+        if cfg.persist_profile and cfg.warmup and not cookies:
+            await self._warm_up()
         if cfg.entry == "address_bar":
             # A person opens the browser and types a query: nothing loads before the search itself.
             await asyncio.sleep(lognormal_between(self._rng, 1.5, 4.0))
@@ -293,6 +307,20 @@ class CamoufoxFetcher:
         await self._pass_consent()
         await self._settle()
         await asyncio.sleep(lognormal_between(self._rng, 1.5, 4.0))
+
+    async def _warm_up(self) -> None:
+        """Open each warm-up page and stay on it, like a person reading. A page that fails to load is
+        skipped; Google's consent dialog is answered on the way."""
+        p = self.config.policy
+        for url in self.config.warmup:
+            try:
+                await self._page.goto(url, wait_until="domcontentloaded", timeout=self.config.nav_timeout_ms)
+            except Exception as exc:  # a slow or broken third-party page must not cost the session
+                log.info("warmup_page_failed url=%s error=%s", url, type(exc).__name__)
+                continue
+            await self._pass_consent()
+            await asyncio.sleep(self._rng.uniform(p.warmup_dwell_min_s, p.warmup_dwell_max_s))
+        await self._page.goto("about:blank")  # a new tab: the search is typed into the address bar
 
     async def _launch(self, cfg: CamoufoxConfig, place: Place | None) -> Any:
         """Start the browser. A real-device preset can name a GPU that Camoufox has no WebGL data for

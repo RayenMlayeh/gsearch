@@ -310,6 +310,31 @@ async def test_consent_dialog_is_rejected_unless_google_places_the_exit_elsewher
         await fetcher.aclose()
 
 
+@pytest.mark.skipif(os.environ.get("GSEARCH_SKIP_BROWSER") == "1", reason="GSEARCH_SKIP_BROWSER=1")
+async def test_a_new_device_warms_up_before_its_first_search(
+    tmp_path: Path, fake_google: tuple[str, str]
+) -> None:
+    base_url, _ = fake_google
+    cfg = dataclasses.replace(
+        _config(tmp_path, base_url, warmup_dwell_min_s=0.01, warmup_dwell_max_s=0.02),  # type: ignore[type-var]
+        identity="warmup-test",
+        entry="address_bar",
+        warmup=(f"{base_url}/?warm=1", f"{base_url}/no-such-page"),
+    )
+    fetcher = camoufox_backend.CamoufoxFetcher(cfg)
+    PAGE_HITS.clear()
+    try:
+        resp = await SearchClient(fetcher).search(SearchRequest(query="what is asyncio in python"))
+        assert isinstance(resp, SearchResponse), resp
+        assert [h["path"] for h in PAGE_HITS[:2]] == [
+            "/?warm=1",
+            "/search?client=firefox-b-d&q=what+is+asyncio+in+python",
+        ]
+        assert "referer" not in PAGE_HITS[1]  # still typed into the address bar, from a new tab
+    finally:
+        await fetcher.aclose()
+
+
 async def test_a_lasting_identity_keeps_its_device_across_launches(tmp_path: Path) -> None:
     place = Place(ip="203.0.113.7", country="US", timezone="America/Chicago", locale="en-US")
     cfg = dataclasses.replace(_config(tmp_path, "http://127.0.0.1:9"), fingerprint_preset=True, place=place)
