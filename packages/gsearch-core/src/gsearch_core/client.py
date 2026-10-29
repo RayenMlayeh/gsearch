@@ -28,7 +28,7 @@ from .fetch import Fetcher, FetchError, LinkResolver, PageProxy
 from .page import fetch_page
 
 READ_CHARS = 8000  # per page read with read_top: three pages stay a modest part of an agent's context
-READ_TIMEOUT_S = 10.0  # a slow site is left out rather than holding up the answer
+READ_TIMEOUT_S = 6.0  # a slow site is left out rather than holding up the answer
 
 
 @dataclass(frozen=True, slots=True)

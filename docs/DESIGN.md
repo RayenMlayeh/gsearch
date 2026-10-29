@@ -49,7 +49,7 @@ Static proxies (no session id in the login, e.g. a VPS or datacenter list) keep 
 instead, used in turn, each with the own-IP budget, and rest until midnight after a CAPTCHA. The slow steps
 stay out of the agent's tool calls: the MCP server readies two exits in the background from the start (a new
 device's warm-up, then one everyday search to open the session), searches go to a ready exit first, and a
-search waits at most 30 s for one before it returns `rate_limited` with a short `retry_after_s`. Each exit's
+search waits at most 15 s for one before it returns `rate_limited` with a short `retry_after_s`. Each exit's
 IP is looked up again every 3 minutes, alongside a search, because sticky logins change IP on their own.
 
 ## Decisions
