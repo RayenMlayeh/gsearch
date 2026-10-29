@@ -7,6 +7,8 @@ reuses it. Nothing here generates or alters a token.
 - TLS: curl_cffi `firefox147` plus a cipher override, which matches Camoufox's ClientHello.
 - Headers: copied from the browser's own last document request, in its order; only Referer, Sec-Fetch-*
   and Cookie are set per request.
+- A results page is read up to Google's script container after the results (`id="xjs"`): the rest is about
+  two thirds of the bytes and none of the results.
 - Result URLs: one `/goto?url=<blob>` GET each, read from the 302 Location, on a connection of its own
   without the session's cookies (a link token works from any client), so the session only ever searches.
   The destination is never requested.
@@ -62,6 +64,8 @@ _DROP = {"host", "connection", "alt-used", "cookie", "content-length", "referer"
 _BLOCKS = (PageState.CAPTCHA, PageState.HARD_BLOCK)
 RESOLVE_CONCURRENCY = 3
 RESOLVE_TIMEOUT_S = 10.0
+SEARCH_TIMEOUT_S = 10.0  # Google answers in under 3 s; longer means the exit is gone
+RESULTS_END = b'id="xjs"'  # Google's script container, right after everything the parser reads
 
 
 class HybridFetcher:
@@ -161,7 +165,7 @@ class HybridFetcher:
             url = url.replace(GOOGLE_ORIGIN, self.config.base_url, 1)
             assert self._http is not None
             try:
-                resp = await self._http.get(url, headers=self._headers(), allow_redirects=False, timeout=20)
+                resp, body = await self._get_results(url)
             except Exception as exc:  # curl_cffi raises its own error types; the exit did not answer
                 raise FetchError(
                     "network",
@@ -172,11 +176,11 @@ class HybridFetcher:
             self.browser.record_search()
             self.browser.note_used()
             self._absorb_cookies(resp)
-            size = len(resp.content)
+            size = len(body)
             self.stats["http_searches"] += 1
             self.stats["http_bytes"] += size
             headers = {k.lower(): v for k, v in resp.headers.items()}
-            html = resp.text
+            html = body.decode(resp.encoding or "utf-8", errors="replace")
             verdict = classify(html, url=str(resp.url), status=resp.status_code, headers=headers)
             log.info("hybrid_http_search status=%s state=%s bytes=%s", resp.status_code, verdict.state, size)
             if verdict.state in _BLOCKS:
@@ -206,6 +210,23 @@ class HybridFetcher:
                 backend="hybrid-http",
                 headers=headers,
             )
+
+    async def _get_results(self, url: str) -> tuple[Any, bytes]:
+        """The results page up to the end of its results. The rest (footer, script and image data) is about
+        two thirds of the bytes, and on a residential exit the time follows the bytes."""
+        assert self._http is not None
+        resp = await self._http.get(
+            url, headers=self._headers(), allow_redirects=False, timeout=SEARCH_TIMEOUT_S, stream=True
+        )
+        body = bytearray()
+        try:
+            async for chunk in resp.aiter_content():
+                body += chunk
+                if body.find(RESULTS_END, max(0, len(body) - len(chunk) - len(RESULTS_END))) != -1:
+                    break
+        finally:
+            await resp.aclose()
+        return resp, bytes(body)
 
     async def _save_evidence(self, label: str, url: str, html: str, headers: dict[str, str]) -> str | None:
         """The blocked page (the /sorry page names the IP Google saw) and the exit IP the session began on.

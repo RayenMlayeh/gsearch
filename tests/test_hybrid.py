@@ -7,6 +7,7 @@ back to the browser / rests the identity. The real-browser path is covered by te
 
 from __future__ import annotations
 
+import contextlib
 import tempfile
 import threading
 from collections.abc import Iterator
@@ -77,13 +78,22 @@ def fake() -> Iterator[tuple[str, Seen]]:
                 return
             elif parts.path == "/sorry/index":
                 body, status = "<html>IP address: 203.0.113.9</html>", 429
+            elif q == "long page":  # like live Google: script and image data after the results
+                body, status = (
+                    serp.replace("</body>", '<div id="xjs"></div>' + "x" * 3_000_000 + "</body>"),
+                    200,
+                )
             else:
                 body, status = serp, 200
             self.send_response(status)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Set-Cookie", "NID=rotated; Path=/")
             self.end_headers()
-            self.wfile.write(body.encode("utf-8"))
+            data = body.encode("utf-8")
+            with contextlib.suppress(OSError):  # the client stops reading after the results
+                for i in range(0, len(data), 65536):
+                    self.wfile.write(data[i : i + 65536])
+                    self.wfile.flush()
 
         def log_message(self, *args: object) -> None:
             pass
@@ -297,5 +307,19 @@ async def test_block_over_http_rests_identity_and_drops_session(fake: tuple[str,
         assert resp.retry_after_s == 3600
         assert browser.blocks == ["captcha (http)"]
         assert fetcher.status()["http_session"] is False
+    finally:
+        await fetcher.aclose()
+
+
+async def test_an_http_search_stops_reading_after_the_results(fake: tuple[str, Seen]) -> None:
+    base, _ = fake
+    fetcher = hybrid.HybridFetcher(FakeBrowser(base))
+    client = SearchClient(fetcher)
+    try:
+        await client.search(SearchRequest(query="what is asyncio in python"))  # opens the session
+        resp = await client.search(SearchRequest(query="long page"))
+        assert isinstance(resp, SearchResponse) and resp.meta.backend == "hybrid-http"
+        assert len(resp.organic) == 8
+        assert fetcher.stats["http_bytes"] < 1_000_000  # not the 3 MB that follow the results
     finally:
         await fetcher.aclose()
