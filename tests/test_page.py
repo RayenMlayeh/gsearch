@@ -105,3 +105,8 @@ async def test_refuses_other_content_and_reports_http_errors(site: str) -> None:
 async def test_big_pages_are_cut(site: str) -> None:
     content = await page.fetch_page(f"{site}/big")
     assert content.truncated and len(content.text) == 30_000
+
+
+async def test_with_google_only_a_site_skips_the_proxy(site: str) -> None:
+    content = await page.fetch_page(f"{site}/article", proxy="http://127.0.0.1:9", google_only=True)
+    assert content.title == "Asyncio"  # the proxy address is dead: the site was fetched directly

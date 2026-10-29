@@ -13,7 +13,8 @@
         "source_meta": null,
         "snippet": "Wikipedia is a free online encyclopedia, created and edited by volunteers around the world and hosted by the Wikimedia Foundation.",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 2,
@@ -25,7 +26,8 @@
         "source_meta": null,
         "snippet": "Welcome to Wikipedia , the free encyclopedia that anyone can edit. 273,114 active editors 7,253,914 articles in English",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 3,
@@ -43,7 +45,8 @@
             "link": "https://www.google.com/goto?url=FIXTURE_beae22abf41c64f6",
             "url": null
           }
-        ]
+        ],
+        "content": null
       },
       {
         "position": 4,
@@ -55,7 +58,8 @@
         "source_meta": null,
         "snippet": "With the official Wikipedia app, you can search and explore 40+ million articles in 300+ languages , no matter where you are.",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 5,
@@ -67,7 +71,8 @@
         "source_meta": null,
         "snippet": "Wikipedia [e] is a free online encyclopedia written and maintained. Wikipedia is the largest and most read reference work in history.",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 6,
@@ -79,7 +84,8 @@
         "source_meta": null,
         "snippet": "Wikimedia Commons is part of the non-profit, multilingual, free-content Wikimedia family. Wikipedia Encyclopedia. Wiktionary Dictionary & thesaurus.",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 7,
@@ -97,7 +103,8 @@
             "link": "https://www.google.com/goto?url=FIXTURE_7f6fe2860cf8a9c3",
             "url": null
           }
-        ]
+        ],
+        "content": null
       },
       {
         "position": 8,
@@ -109,7 +116,8 @@
         "source_meta": "835.5K+ followers",
         "snippet": "Most of the photos on Wikipedia come from Wikimedia Commons, upload millions of images, videos, and audio files. Wikipedia began in 2001 … er review and ...",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 9,
@@ -127,7 +135,8 @@
             "link": "https://www.google.com/goto?url=FIXTURE_1c5a379632aa6547",
             "url": null
           }
-        ]
+        ],
+        "content": null
       }
     ],
     "ads": [],

@@ -134,7 +134,8 @@ Google's official search API is closed to new customers and shuts down on 1 Janu
 - 🦊 **A real browser, not a scraper.** Camoufox, a hardened Firefox, runs Google's page as it is, with a
   real-device fingerprint and a locale that matches its IP.
 - 🔗 **Real pages.** Google hides result links behind `/goto` redirects. `fetch_page` follows one to the
-  page it points to when the agent reads it; `resolve_links` resolves them all up front instead.
+  page it points to when the agent reads it; `resolve_links` resolves them all up front instead, and
+  `read_top` returns the top pages' text with the results, in one call.
 - 🤖 **Built for agents.** One MCP server: search, page reading and status, typed JSON. Blocks come back as clear errors with
   `retry_after_s`, never as empty results, and every string is flagged as untrusted web content.
 - 🌍 **Any proxy, any format.** Rotating residential, static VPS or datacenter lists, HTTP, HTTPS or SOCKS5,
@@ -207,7 +208,9 @@ GSEARCH_PROXY=/path/to/proxies.txt
   4 IPs per search. `country-xx` or `cc-xx` in the login is checked, and exits elsewhere are dropped.
 - **Static:** each IP keeps one warm session, and the IPs take turns. Each IP has its own budget (20 searches
   an hour, 150 a day) and rests until midnight after a CAPTCHA, so ten IPs allow up to about 200 searches an
-  hour.
+  hour. The MCP server gets two of them ready in the background from the start, so a search never waits for
+  a browser, and a CAPTCHA hands over to the other one. A login whose IP changes on its own (sticky sessions)
+  is looked up again every 3 minutes, so a CAPTCHA rests the IP Google saw.
 - **Data:** every byte goes through a local relay that counts it, and `GSEARCH_DATA_LIMIT_MB` stops
   everything at your limit, across restarts.
 
@@ -241,7 +244,7 @@ python tools/benchmark.py -n 10
 ## 🛠 Reference
 
 <details>
-<summary><b>Settings</b> (five in total; most people need the first two)</summary>
+<summary><b>Settings</b> (six in total; most people need the first two)</summary>
 
 | Setting | What it does |
 |---|---|
@@ -250,6 +253,7 @@ python tools/benchmark.py -n 10
 | `GSEARCH_ENV_FILE` | Absolute path of your `.env`. Needed in MCP client configs. If set, the file must exist. |
 | `GSEARCH_FIXTURES_DIR` | Answer from saved pages instead of Google (demos and tests). |
 | `GSEARCH_STATE_DIR` | Where budgets, the data meter and saved block pages live. Default: `%LOCALAPPDATA%\gsearch` or `~/.local/share/gsearch`. |
+| `GSEARCH_PAGES_DIRECT` | `1`: `fetch_page` loads sites from your own IP (faster, no proxy data). Google's own links still go through the proxy. |
 
 Everything else is fixed to what worked best in testing: a new IP per search with rotating proxies, a
 visible browser, address-bar search, real-device fingerprints, 4 attempts per search, and a 10-minute cache for repeated queries.
@@ -261,8 +265,8 @@ visible browser, address-bar search, real-device fingerprints, 4 attempts per se
 
 | MCP tool | Arguments | Returns |
 |---|---|---|
-| `google_search` | `query`, and optionally `page` (1–50), `lang` (`en`, `fr`, …), `country` (`us`, …), `time_range` (`h`, `d`, `w`, `m`, `y`), `site` (a domain) | The JSON above plus a short text summary, or an error result on a block. |
-| `fetch_page` | `url` (a public `http`/`https` page) | The page's title, readable text (up to 30,000 characters) and the links in its main content. Goes through your proxy and counts against the data limit. Refuses this machine and private networks. |
+| `google_search` | `query`, and optionally `page` (1–50), `lang` (`en`, `fr`, …), `country` (`us`, …), `time_range` (`h`, `d`, `w`, `m`, `y`), `site` (a domain), `resolve_links`, `read_top` (0–5: also read the top pages, 8,000 characters each) | The JSON above plus a short text summary, or an error result on a block. |
+| `fetch_page` | `url` (a public `http`/`https` page, or a result's Google `link`) | The page's title, readable text (up to 30,000 characters) and the links in its main content. Goes through your proxy and counts against the data limit, unless `GSEARCH_PAGES_DIRECT=1`. Refuses this machine and private networks. |
 | `google_search_status` | none | Proxy data used against the limit, IPs used and blocked, and the cache. Never contacts Google. |
 
 ```text

@@ -9,6 +9,13 @@ Two kinds of proxy, each used the way that worked best in testing:
   turn, each with its own budget like a home IP. A proxy that gets a CAPTCHA rests until tomorrow.
 Every new exit is located first and dropped if it does not answer, or if it is outside the country the
 login asks for. A blocked search is retried on another exit, up to `max_attempts`.
+
+Static proxies are kept ready in the background: `prewarm` opens a session (and warms up a new device) on
+up to SPARES exits, at start and after every search, and searches go to an exit with a session open first,
+so a block hands over to a ready exit. A search never waits more than WARM_WAIT_S for a session; it gets a
+short retry instead. A static login can still change its
+exit IP (sticky sessions expire), so each exit's IP is looked up again, alongside a search, every
+EXIT_CHECK_S.
 """
 
 from __future__ import annotations
@@ -37,6 +44,10 @@ PARALLEL = 3  # rotating proxies: browsers at once
 LEASE_S = 60.0  # a member that just served a page keeps it until its links are resolved, at most this long
 SPAWN_DRAWS = 4  # fresh exits tried before giving up (dead or wrong-country exits)
 DEAD_S = 600.0  # a static proxy that failed its location check, or is resting, is looked at again after this
+WARM_WAIT_S = 30.0  # longest a search waits for a session being opened in the background
+SPARES = 2  # static exits kept with a session open
+EXIT_CHECK_S = 180.0
+PREWARM_QUERIES = ("weather", "news", "football scores", "translate", "bbc news", "maps")
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +57,7 @@ class PoolConfig:
     byte_cap_bytes: int | None = None
     meter_path: Path | None = None
     max_attempts: int = 4  # exits tried per search (blocks, dead and wrong-country exits)
+    pages_direct: bool = False  # fetch_page loads sites from this machine; Google's links still use a proxy
 
 
 @dataclass(eq=False)
@@ -56,6 +68,7 @@ class Member:
     searches: int = 0
     busy: int = 0
     leased_until: float = 0.0
+    located_at: float = field(default_factory=time.monotonic)
 
     def idle(self) -> bool:
         return self.busy == 0 and time.monotonic() >= self.leased_until
@@ -79,6 +92,7 @@ class ProxyPool:
             raise ValueError("no proxies")
         self.config = config
         self.rotating = all(p.rotating for p in config.proxies)
+        self.pages_direct = config.pages_direct
         self.meter = ByteMeter(config.meter_path, config.byte_cap_bytes)
         self._rng = rng or random.Random()  # nosec B311 - session ids, not secrets
         self._make = make_fetcher or (lambda cfg: HybridFetcher(CamoufoxFetcher(cfg)))
@@ -88,6 +102,8 @@ class ProxyPool:
         self._page_relay: Relay | None = None
         self._turn = 0
         self._lock = asyncio.Lock()
+        self._warming: asyncio.Task[None] | None = None
+        self._tasks: set[asyncio.Task[None]] = set()
         self._slots = asyncio.Semaphore(PARALLEL if self.rotating else len(config.proxies))
         self.stats = {
             "spawned": 0,
@@ -156,8 +172,9 @@ class ProxyPool:
             self._turn += 1
             waits: list[float] = []
             fallback: Member | None = None
-            for i in range(len(proxies)):
-                upstream = proxies[(start + i) % len(proxies)]
+            in_turn = [proxies[(start + i) % len(proxies)] for i in range(len(proxies))]
+            ready = self._ready()
+            for upstream in sorted(in_turn, key=lambda u: u.key not in ready):  # open sessions first
                 dead_for = self._dead_until.get(upstream.key, 0.0) - time.monotonic()
                 if upstream.key in exclude or dead_for > 0:
                     waits += [dead_for] if dead_for > 0 else []
@@ -186,6 +203,59 @@ class ProxyPool:
             retry_after_s=math.ceil(min(waits)) if waits else 60,
         )
 
+    # ------------------------------------------------------------ readiness
+    def _background(self, work: Awaitable[None]) -> asyncio.Task[None]:
+        task = asyncio.ensure_future(work)
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+        return task
+
+    def _ready(self) -> set[str]:
+        return {key for key, member in self._members.items() if member.fetcher.ready}
+
+    def prewarm(self) -> None:
+        """Ready one more static exit in the background, while fewer than SPARES are ready."""
+        if self.rotating or len(self._ready()) >= min(SPARES, len(self.config.proxies)):
+            return
+        if self._warming is None or self._warming.done():
+            self._warming = self._background(self._warm_one())
+
+    async def _warm_one(self) -> None:
+        member: Member | None = None
+        try:
+            member = await self._next_static(self._ready())
+            await member.fetcher.prewarm(self._rng.choice(PREWARM_QUERIES))
+        except Exception as exc:  # the next search reports the real error
+            log.warning("pool_prewarm_failed: %s: %s", type(exc).__name__, exc)
+            if member is not None:  # not again after every search: each try costs a browser's data
+                self._dead_until[member.key] = time.monotonic() + DEAD_S
+
+    async def _await_ready(self) -> None:
+        """With no session open, wait at most WARM_WAIT_S for one, rather than open it inside this search."""
+        if self._ready():
+            return
+        self.prewarm()
+        assert self._warming is not None
+        try:
+            await asyncio.wait_for(asyncio.shield(self._warming), WARM_WAIT_S)
+        except TimeoutError:
+            raise FetchError(
+                "rate_limited",
+                "getting a Google session ready in the background (a new device takes a few minutes)",
+                retryable=True,
+                retry_after_s=60,
+            ) from None
+
+    async def _relocate(self, member: Member) -> None:
+        try:
+            place = await self._locate(member.relay.url)
+        except Exception:  # the exit is checked again next time
+            return
+        old = member.fetcher.browser.config.place
+        if old is None or place.ip != old.ip:
+            log.info("pool_exit_moved proxy=%s ip=%s", member.key, place.ip)
+            member.fetcher.browser.move_to(place)
+
     async def _sweep(self) -> None:
         """Close one-shot exits whose links were never resolved (e.g. a page without results)."""
         if self.rotating:
@@ -211,12 +281,17 @@ class ProxyPool:
             for attempt in range(self.config.max_attempts):
                 last = attempt + 1 == self.config.max_attempts
                 try:
+                    if not self.rotating:
+                        await self._await_ready()
                     member = await (self._fresh_exit() if self.rotating else self._next_static(tried))
                 except FetchError:
                     if page is not None:
                         return page
                     raise
                 tried.add(member.key)
+                if not self.rotating and time.monotonic() - member.located_at > EXIT_CHECK_S:
+                    member.located_at = time.monotonic()
+                    self._background(self._relocate(member))
                 member.busy += 1
                 try:
                     page = await member.fetcher.fetch(req)
@@ -241,6 +316,7 @@ class ProxyPool:
                 if page.block_retry_after_s is None:
                     member.leased_until = time.monotonic() + LEASE_S
                     _serving.set(member)
+                    self.prewarm()
                     return page
                 self.stats["blocked"] += 1
                 if self.rotating:  # a static proxy stays, resting (its fetcher recorded the block)
@@ -287,6 +363,8 @@ class ProxyPool:
         }
 
     async def aclose(self) -> None:
+        for task in list(self._tasks):
+            task.cancel()
         for member in list(self._members.values()):
             await self._retire(member, "shutdown")
         if self._page_relay is not None:

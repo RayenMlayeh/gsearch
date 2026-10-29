@@ -12,7 +12,7 @@ from typing import Annotated, Literal
 
 from gsearch_core.client import SearchClient
 from gsearch_core.config import fetcher_from_env
-from gsearch_core.fetch import StatusReporter
+from gsearch_core.fetch import Prewarmer, StatusReporter
 from gsearch_parse.models import PageContent, SearchError, SearchRequest, SearchResponse, TimeRange
 from mcp.server.mcpserver import MCPServer
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
@@ -65,6 +65,9 @@ def _summary(resp: SearchResponse) -> str:
     for box in resp.answer_boxes:
         lines.append(f"[{box.title}] {box.text[:300]}")
         lines.extend(f"  - {x.title} - {x.url or x.link}" for x in box.links)
+    for r in resp.organic:
+        if r.content:
+            lines.append(f"\n--- Page of result {r.position}: {r.content.url}\n{r.content.text}")
     lines.append(UNTRUSTED)
     return "\n".join(lines)
 
@@ -76,6 +79,8 @@ def _page_text(page: PageContent) -> str:
 def build_server(client: SearchClient, *, live: bool) -> MCPServer:
     @contextlib.asynccontextmanager
     async def close_on_exit(_server: MCPServer) -> AsyncIterator[None]:
+        if isinstance(client.fetcher, Prewarmer):
+            client.fetcher.prewarm()  # the first search should not wait for a browser
         try:
             yield
         finally:
@@ -95,7 +100,8 @@ def build_server(client: SearchClient, *, live: bool) -> MCPServer:
             "facts. For 'today' or 'tonight' questions, do not set time_range; it hides schedule pages. "
             "Before answering, open the most relevant result or box links with fetch_page instead of "
             "relying on snippets: pass a result's `url`, or its `link` when `url` is null, and fetch_page "
-            "follows Google's redirect. Set resolve_links only when you need every real URL up front: it "
+            "follows Google's redirect. Set read_top (e.g. 3) to get the top pages' text in the same call: "
+            "the fastest way to answer. Set resolve_links only when you need every real URL up front: it "
             "is slower and sends Google one request per link. Set lang (e.g. 'en') to choose the interface "
             "language. On a block, returns an error with `code` (captcha, soft_block, hard_block, "
             "consent_wall, js_gate, rate_limited, parse_drift, ...) and `retry_after_s`. " + UNTRUSTED
@@ -117,6 +123,10 @@ def build_server(client: SearchClient, *, live: bool) -> MCPServer:
             bool,
             Field(description="Fill every result's `url` now (slower). Default: leave it to fetch_page."),
         ] = False,
+        read_top: Annotated[
+            int,
+            Field(ge=0, le=5, description="Also read the top N results' pages (8,000 characters each)."),
+        ] = 0,
     ) -> Annotated[CallToolResult, SearchResponse]:
         try:
             req = SearchRequest(
@@ -128,6 +138,7 @@ def build_server(client: SearchClient, *, live: bool) -> MCPServer:
                 time_range=time_range,
                 site=site,
                 resolve_links=resolve_links,
+                read_top=read_top,
             )
         except ValidationError as exc:
             return _error_result(

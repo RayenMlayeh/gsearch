@@ -83,6 +83,17 @@ class HybridFetcher:
     def config(self) -> Any:
         return self.browser.config
 
+    @property
+    def ready(self) -> bool:
+        """A session is open and the identity may search now: the next search is a fast HTTP one."""
+        return self._adopted and self.browser.ready_in_s() == 0
+
+    async def prewarm(self, query: str) -> None:
+        """Open the session before it is needed (a new device's warm-up included) with one everyday search."""
+        async with self._lock:
+            if not self._adopted:
+                await self._browser_search(SearchRequest(query=query))
+
     # --------------------------------------------------------------- session
     async def _adopt(self) -> bool:
         exported = await self.browser.export_session()

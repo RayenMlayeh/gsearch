@@ -78,7 +78,16 @@ class LinkResolver(Protocol):
 class PageProxy(Protocol):
     """Optional backend capability: the proxy that page fetches go through."""
 
+    pages_direct: bool  # only Google's own hops use the proxy; sites are fetched directly
+
     async def page_proxy(self) -> str: ...
+
+
+@runtime_checkable
+class Prewarmer(Protocol):
+    """Optional backend capability: get a session ready in the background, before the first search."""
+
+    def prewarm(self) -> None: ...
 
 
 @runtime_checkable

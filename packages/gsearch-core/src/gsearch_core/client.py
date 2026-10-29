@@ -5,6 +5,7 @@ Blocks and parser drift are returned as SearchError, never as an empty result li
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 from dataclasses import dataclass
 
@@ -25,6 +26,9 @@ from pydantic import ValidationError
 from .cache import CacheStats, QueryCache
 from .fetch import Fetcher, FetchError, LinkResolver, PageProxy
 from .page import fetch_page
+
+READ_CHARS = 8000  # per page read with read_top: three pages stay a modest part of an agent's context
+READ_TIMEOUT_S = 10.0  # a slow site is left out rather than holding up the answer
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,6 +100,9 @@ class SearchClient:
             organic = [_with_url(r, resolved) for r in data.organic]
             missing = sum(1 for r in organic if r.url is None) if resolved is not None else 0
             warnings = [f"{missing} result URL(s) could not be resolved"] if missing else []
+            if req.read_top:
+                organic, unread = await self._read_top(organic, req.read_top)
+                warnings += [f"result(s) {', '.join(map(str, unread))} could not be read"] if unread else []
             resp = SearchResponse(
                 request=req,
                 organic=organic,
@@ -137,10 +144,31 @@ class SearchClient:
 
     async def fetch_page(self, url: str) -> PageContent | SearchError:
         try:
-            proxy = await self.fetcher.page_proxy() if isinstance(self.fetcher, PageProxy) else None
-            return await fetch_page(url, proxy=proxy)
+            if isinstance(self.fetcher, PageProxy):
+                proxy = await self.fetcher.page_proxy()
+                return await fetch_page(url, proxy=proxy, google_only=self.fetcher.pages_direct)
+            return await fetch_page(url)
         except FetchError as exc:
             return self._fetch_error(exc)
+
+    async def _read_top(self, organic: list[OrganicResult], n: int) -> tuple[list[OrganicResult], list[int]]:
+        """The first n results with their pages, fetched at once, and the positions that could not be read."""
+        top = organic[:n]
+        pages = await asyncio.gather(*(self._read(r) for r in top))
+        unread = [r.position for r, page in zip(top, pages, strict=True) if page is None]
+        read = [r.model_copy(update={"content": page}) for r, page in zip(top, pages, strict=True)]
+        return read + organic[n:], unread
+
+    async def _read(self, result: OrganicResult) -> PageContent | None:
+        try:
+            page = await asyncio.wait_for(self.fetch_page(str(result.url or result.link)), READ_TIMEOUT_S)
+        except TimeoutError:
+            return None
+        if isinstance(page, SearchError):
+            return None
+        if len(page.text) > READ_CHARS:
+            return page.model_copy(update={"text": page.text[:READ_CHARS], "truncated": True})
+        return page
 
     def _fetch_error(self, exc: FetchError) -> SearchError:
         return SearchError(

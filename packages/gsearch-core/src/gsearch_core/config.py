@@ -3,6 +3,8 @@
 GSEARCH_PROXY          one or more proxies in any common format, or the path of a file listing them.
                        Unset: searches go out from this machine's own IP.
 GSEARCH_DATA_LIMIT_MB  stop all proxy traffic at this many MB, counted across runs (default: no limit)
+GSEARCH_PAGES_DIRECT   1: fetch_page loads sites from this machine's own IP (faster, no proxy data); Google's
+                       own links still go through the proxy
 GSEARCH_ENV_FILE       absolute path of the settings file (default: .env in the working directory)
 GSEARCH_FIXTURES_DIR   answer from saved pages instead of Google (demos and tests)
 GSEARCH_STATE_DIR      budgets, data meter and evidence (default %LOCALAPPDATA%\\gsearch or
@@ -83,6 +85,7 @@ def fetcher_from_env(env: Mapping[str, str] | None = None) -> tuple[Fetcher, boo
             browser=browser,
             byte_cap_bytes=int(float(limit) * 1e6) if limit else None,
             meter_path=state / "proxy_bytes.json",
+            pages_direct=env.get("GSEARCH_PAGES_DIRECT", "").strip() == "1",
         )
     )
     return pool, True

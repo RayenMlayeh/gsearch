@@ -25,7 +25,7 @@ block detection and the same output:
 | `HybridFetcher` | no proxy | the browser opens one session on the own IP, `curl_cffi` does later searches |
 
 Settings are deliberately few (`GSEARCH_PROXY`, `GSEARCH_DATA_LIMIT_MB`, plus `GSEARCH_ENV_FILE`,
-`GSEARCH_FIXTURES_DIR` and `GSEARCH_STATE_DIR`). Everything else is fixed to what worked best in testing.
+`GSEARCH_FIXTURES_DIR`, `GSEARCH_STATE_DIR` and `GSEARCH_PAGES_DIRECT`). Everything else is fixed to what worked best in testing.
 
 A live search with a rotating proxy:
 
@@ -46,7 +46,11 @@ A live search with a rotating proxy:
 6. Everything for that exit is closed. The next search starts again at step 1.
 
 Static proxies (no session id in the login, e.g. a VPS or datacenter list) keep one warm session per IP
-instead, used in turn, each with the own-IP budget, and rest until midnight after a CAPTCHA.
+instead, used in turn, each with the own-IP budget, and rest until midnight after a CAPTCHA. The slow steps
+stay out of the agent's tool calls: the MCP server readies two exits in the background from the start (a new
+device's warm-up, then one everyday search to open the session), searches go to a ready exit first, and a
+search waits at most 30 s for one before it returns `rate_limited` with a short `retry_after_s`. Each exit's
+IP is looked up again every 3 minutes, alongside a search, because sticky logins change IP on their own.
 
 ## Decisions
 

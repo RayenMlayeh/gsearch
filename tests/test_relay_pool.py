@@ -11,7 +11,7 @@ import contextlib
 import json
 import random
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -292,19 +292,37 @@ class FakeBrowser:
     def ready_in_s(self) -> float:
         return self.rest_s
 
+    def move_to(self, place: Place) -> None:
+        self.config = replace(self.config, place=place)
+
 
 class FakeHybrid:
     instances: list[FakeHybrid] = []  # noqa: RUF012 - test registry
+    prewarm_s = 0.0
 
     def __init__(self, config: Any) -> None:
         self.browser = FakeBrowser(config)
         self.fetched: list[str] = []
         self.resolved: list[str] = []
         self.closed = False
+        self.session = False
+        self.prewarms: list[str] = []
         FakeHybrid.instances.append(self)
+
+    @property
+    def ready(self) -> bool:
+        return self.session and self.browser.rest_s == 0
+
+    async def prewarm(self, query: str) -> None:
+        self.prewarms.append(query)
+        await asyncio.sleep(self.prewarm_s)
+        if self.browser.config.place.country == "NL":
+            raise FetchError("consent_wall", "Google served its consent dialog", retryable=True)
+        self.session = True
 
     async def fetch(self, req: SearchRequest) -> FetchedPage:
         self.fetched.append(req.query)
+        self.session = True
         if req.query.startswith("dead") and len(FakeHybrid.instances) == 1:
             raise FetchError("network", "exit did not answer", retryable=True)
         if req.query.startswith("eu") and len(FakeHybrid.instances) == 1:
@@ -335,6 +353,7 @@ def pool_factory(upstream: FakeUpstream, tmp_path: Path) -> Any:
     from gsearch_core.pool import PoolConfig, ProxyPool
 
     FakeHybrid.instances = []
+    FakeHybrid.prewarm_s = 0.0
 
     def make(
         proxies: tuple[Upstream, ...] | None = None, countries: list[str] | None = None, **kw: Any
@@ -353,6 +372,11 @@ def pool_factory(upstream: FakeUpstream, tmp_path: Path) -> Any:
         return ProxyPool(cfg, make_fetcher=FakeHybrid, locate=locate)  # type: ignore[arg-type]
 
     return make
+
+
+async def settle(pool: Any) -> None:
+    while pool._tasks:
+        await asyncio.gather(*pool._tasks)
 
 
 async def test_rotating_one_shot_new_exit_per_search_closed_after_its_links(pool_factory: Any) -> None:
@@ -404,7 +428,9 @@ async def test_static_proxies_are_used_in_turn_with_warm_sessions(pool_factory: 
         for q in ("a", "b", "c", "d"):
             await pool.fetch(SearchRequest(query=q))
             await pool.resolve_links([f"https://www.google.com/goto?url={q}"])
+            await settle(pool)
         assert [f.fetched for f in FakeHybrid.instances] == [["a", "c"], ["b", "d"]]  # two warm sessions
+        assert all(len(f.prewarms) == 1 for f in FakeHybrid.instances)  # each readied in the background
         assert not any(f.closed for f in FakeHybrid.instances)
     finally:
         await pool.aclose()
@@ -425,6 +451,75 @@ async def test_a_static_proxy_that_gets_a_captcha_rests_and_the_next_one_serves(
         assert err.value.code == "rate_limited" and err.value.retry_after_s == 120
     finally:
         await pool.aclose()
+
+
+async def test_a_search_does_not_wait_long_for_a_session_being_readied(
+    pool_factory: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from gsearch_core import pool as pool_module
+
+    monkeypatch.setattr(pool_module, "WARM_WAIT_S", 0.05)
+    FakeHybrid.prewarm_s = 0.2  # a new device warming up
+    pool = pool_factory(proxies=parse_proxies("u:p@10.0.0.1:3128 u:p@10.0.0.2:3128"))
+    try:
+        pool.prewarm()  # what the MCP server does at start
+        with pytest.raises(FetchError) as err:
+            await pool.fetch(SearchRequest(query="too early"))
+        assert err.value.code == "rate_limited" and err.value.retry_after_s == 60
+        await settle(pool)
+        await pool.fetch(SearchRequest(query="ready now"))
+        assert FakeHybrid.instances[0].fetched == ["ready now"]
+    finally:
+        await pool.aclose()
+
+
+async def test_a_block_hands_over_to_the_spare_exit(pool_factory: Any) -> None:
+    pool = pool_factory(proxies=parse_proxies("u:p@10.0.0.1:3128 u:p@10.0.0.2:3128"))
+    try:
+        pool.prewarm()
+        await settle(pool)
+        pool.prewarm()
+        await settle(pool)
+        assert pool._ready() == {p.key for p in pool.config.proxies}  # two exits kept ready
+        page = await pool.fetch(SearchRequest(query="first search"))  # the first exit gets a CAPTCHA
+        assert page.block_retry_after_s is None and len(FakeHybrid.instances) == 2
+        assert [f.fetched for f in FakeHybrid.instances] == [["first search"]] * 2
+        assert all(len(f.prewarms) == 1 for f in FakeHybrid.instances)  # the spare needed no new session
+    finally:
+        await pool.aclose()
+
+
+async def test_an_exit_that_cannot_be_readied_is_left_alone_for_a_while(pool_factory: Any) -> None:
+    pool = pool_factory(proxies=parse_proxies("u:p@10.0.0.1:3128 u:p@10.0.0.2:3128"), countries=["NL", "US"])
+    try:
+        for q in ("a", "b", "c"):
+            await pool.fetch(SearchRequest(query=q))
+            await settle(pool)
+        failing, serving = FakeHybrid.instances
+        assert len(failing.prewarms) == 1 and serving.fetched == ["a", "b", "c"]
+    finally:
+        await pool.aclose()
+
+
+async def test_a_static_exit_that_changes_ip_is_looked_up_again(pool_factory: Any) -> None:
+    pool = pool_factory(proxies=parse_proxies("u:p@10.0.0.1:3128"), countries=["US", "US"])
+    try:
+        await pool.fetch(SearchRequest(query="a"))
+        (member,) = pool._members.values()
+        member.located_at = 0.0  # last looked up long ago
+        pool._locate = _locate_at("198.51.100.4")
+        await pool.fetch(SearchRequest(query="b"))
+        await settle(pool)
+        assert member.fetcher.browser.config.place.ip == "198.51.100.4"
+    finally:
+        await pool.aclose()
+
+
+def _locate_at(ip: str) -> Any:
+    async def locate(relay_url: str) -> Place:
+        return Place(ip=ip, country="US", timezone="America/Chicago", locale="en-US")
+
+    return locate
 
 
 async def test_a_dead_static_proxy_is_not_tried_again_on_every_search(pool_factory: Any) -> None:
@@ -493,6 +588,8 @@ async def test_pages_go_through_the_proxy_and_count_against_the_limit(
         assert upstream.heads[-1].startswith(b"GET http://site.example/")
         assert re.fullmatch(r"user-abc-network-res-country-us-sid-\d{8}-ttl-30", upstream.users[-1])
         assert pool.meter.total > 0
+        await page.fetch_page("http://www.google.com/goto?url=x", proxy=relay_url, google_only=True)
+        assert upstream.heads[-1].startswith(b"GET http://www.google.com/goto")  # Google's hop: proxied
         pool.meter.add(2_000_000)
         with pytest.raises(FetchError) as err:
             await pool.page_proxy()

@@ -19,7 +19,8 @@
             "link": "https://www.google.com/goto?url=FIXTURE_bc2977b91f988880",
             "url": null
           }
-        ]
+        ],
+        "content": null
       },
       {
         "position": 2,
@@ -37,7 +38,8 @@
             "link": "https://www.google.com/goto?url=FIXTURE_d007d0b8b3772cbf",
             "url": null
           }
-        ]
+        ],
+        "content": null
       },
       {
         "position": 3,
@@ -55,7 +57,8 @@
             "link": "https://www.google.com/goto?url=FIXTURE_c365364a53e73436",
             "url": null
           }
-        ]
+        ],
+        "content": null
       },
       {
         "position": 4,
@@ -73,7 +76,8 @@
             "link": "https://www.google.com/goto?url=FIXTURE_2d9786be11ebf3b3",
             "url": null
           }
-        ]
+        ],
+        "content": null
       },
       {
         "position": 5,
@@ -91,7 +95,8 @@
             "link": "https://www.google.com/goto?url=FIXTURE_eb2ab4762d7c705a",
             "url": null
           }
-        ]
+        ],
+        "content": null
       },
       {
         "position": 6,
@@ -103,7 +108,8 @@
         "source_meta": null,
         "snippet": "Découvrez le plaisir d'une cuisine authentique et raffinée à notre restaurant à Megrine, Tunis. Chaque plat est une fusion de saveurs locales et de techniques ...",
         "date": "Dec 15, 2025",
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 7,
@@ -121,7 +127,8 @@
             "link": "https://www.google.com/goto?url=FIXTURE_89ab6f7ac059c3fa",
             "url": null
           }
-        ]
+        ],
+        "content": null
       }
     ],
     "ads": [],

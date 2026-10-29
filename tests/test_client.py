@@ -4,7 +4,7 @@ import pytest
 from conftest import GECKO
 from gsearch_core.cache import QueryCache
 from gsearch_core.client import SearchClient
-from gsearch_core.fetch import FixtureFetcher, build_search_url
+from gsearch_core.fetch import FetchError, FixtureFetcher, build_search_url
 from gsearch_parse.models import PageState, SearchError, SearchRequest, SearchResponse
 from pydantic import ValidationError
 
@@ -102,3 +102,22 @@ async def test_links_are_left_to_fetch_page_unless_asked() -> None:
     assert isinstance(resp, SearchResponse)
     assert all(r.url is None for r in resp.organic)  # no request to Google per link
     assert not resp.meta.warnings
+
+
+async def test_read_top_brings_the_top_pages_in_the_same_call(monkeypatch: pytest.MonkeyPatch) -> None:
+    from gsearch_core import client as client_module
+    from gsearch_parse.models import PageContent
+
+    async def fetch_page(url: str, **_: object) -> PageContent:
+        if "1" in url.rsplit("/", 1)[-1]:
+            raise FetchError("network", "fetch failed: Timeout", retryable=True)
+        return PageContent(url=url, title="T", text="x" * 9000, truncated=False)
+
+    monkeypatch.setattr(client_module, "fetch_page", fetch_page)
+    req = SearchRequest(query="nobel prize 2026", resolve_links=True, read_top=3)
+    resp = await SearchClient(_ResolvingFixtures(GECKO)).search(req)
+    assert isinstance(resp, SearchResponse)
+    pages = [r.content for r in resp.organic]
+    assert pages[0] is not None and len(pages[0].text) == 8000 and pages[0].truncated
+    assert pages[1] is None and pages[2] is not None and pages[3:] == [None] * (len(pages) - 3)
+    assert "result(s) 2 could not be read" in resp.meta.warnings

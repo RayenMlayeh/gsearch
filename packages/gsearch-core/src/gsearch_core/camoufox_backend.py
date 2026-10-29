@@ -23,7 +23,7 @@ import re
 import sys
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -293,7 +293,9 @@ class CamoufoxFetcher:
         self._page.on("request", self._on_request)
         self._session_hl = hl_hint or (place.language if place else "en")
         self._searches_in_session = 0
-        if cfg.persist_profile and cfg.warmup and not cookies:
+        google = urlsplit(cfg.base_url).hostname or ""
+        known = any("google." in c.get("domain", "") or c.get("domain") == google for c in cookies)
+        if cfg.persist_profile and cfg.warmup and not known:  # other sites' cookies: a warm-up cut short
             await self._warm_up()
         if cfg.entry == "address_bar":
             # A person opens the browser and types a query: nothing loads before the search itself.
@@ -342,9 +344,10 @@ class CamoufoxFetcher:
         """Google's EU/UK consent dialog: click "Reject all", as a visitor there does; the saved profile keeps
         the choice. Raise consent_wall when Google places the exit in another country than its IP lookup
         (wrong market: the pool draws another exit) or when the dialog cannot be answered."""
-        gl = consent_country(await self._page.content())
-        if gl is None and "consent.google." not in self._page.url:
+        # The dialog itself, not a link: every results page links to consent.google.com from its account menu.
+        if "consent.google." not in self._page.url and not await self._page.locator(REJECT_ALL).count():
             return
+        gl = consent_country(await self._page.content())
         place = self._place
         if gl and place and ("GB" if gl == "UK" else gl) != place.country:
             reason = f"Google places the exit in {gl}, not {place.country}"
@@ -357,12 +360,14 @@ class CamoufoxFetcher:
                 return
             except Exception:  # Google changed its dialog: refuse the exit, as before consent support
                 reason = "its dialog could not be answered"
+        evidence = await self._save_evidence("consent")
         await self._close_session()
         raise FetchError(
             "consent_wall",
             f"Google served its consent dialog ({reason})",
             retryable=True,
             retry_after_s=0,
+            evidence_ref=evidence,
         )
 
     async def _settle(self) -> None:
@@ -508,6 +513,11 @@ class CamoufoxFetcher:
 
     def note_used(self) -> None:
         self._last_used = time.monotonic()
+
+    def move_to(self, place: Place) -> None:
+        """The proxy changed its exit IP under this identity: rests and evidence follow the new IP."""
+        self.config = replace(self.config, place=place)
+        self._place = place if self._place else None
 
     def ready_in_s(self) -> float:
         """Seconds until admit() lets a search through: rest, daily cap or hourly budget (0 = now)."""

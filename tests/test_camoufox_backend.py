@@ -67,8 +67,15 @@ def fake_google() -> Iterator[tuple[str, str]]:
         ".get('url'); a.setAttribute('href', '/url?sa=t&source=web&url=' + blob + '&ved=X'); } },"
         " true);</script>"
     )
+    # Like live Google: every results page links to the consent page from its account menu, with the
+    # country Google placed the visitor in. That link is not the consent dialog.
+    account_menu = (
+        '<script>["https://consent.google.com/d?continue=https://www.google.com/\u0026gl=GB"]</script>'
+    )
     serp = (
-        fixture_by_id("c3-paa").html().replace("</body>", clickable + rewrite + SUBMIT_ON_ENTER + "</body>")
+        fixture_by_id("c3-paa")
+        .html()
+        .replace("</body>", clickable + rewrite + SUBMIT_ON_ENTER + account_menu + "</body>")
     )
     sorry = (FIXTURES / "synthetic" / "sorry-captcha.html").read_text(encoding="utf-8")
 

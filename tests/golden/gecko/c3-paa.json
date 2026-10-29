@@ -13,7 +13,8 @@
         "source_meta": null,
         "snippet": "asyncio is a library to write concurrent code using the async/await syntax . asyncio is used as a foundation for multiple Python asynchronous frameworks",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 2,
@@ -36,7 +37,8 @@
             "link": "https://www.google.com/goto?url=FIXTURE_7175d5126c931761",
             "url": null
           }
-        ]
+        ],
+        "content": null
       },
       {
         "position": 3,
@@ -48,7 +50,8 @@
         "source_meta": null,
         "snippet": "Asyncio is a Python library that is used for concurrent programming , including the use of async iterator in Python. It is not multi-threading ...",
         "date": "Jul 23, 2025",
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 4,
@@ -60,7 +63,8 @@
         "source_meta": "1 year ago",
         "snippet": "asyncio is a Python library that allows you to run tasks concurrently without creating multiple threads or processes.",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 5,
@@ -72,7 +76,8 @@
         "source_meta": null,
         "snippet": "The asyncio module provides an event loop, tasks, and I/O primitives for concurrent code . Use async / await to write structured asynchronous programs, schedule ...",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 6,
@@ -84,7 +89,8 @@
         "source_meta": null,
         "snippet": "Asyncio : Single thread, single process. It uses an event loop to run many tasks concurrently by switching between them when one task is waiting",
         "date": "Oct 13, 2025",
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 7,
@@ -96,7 +102,8 @@
         "source_meta": null,
         "snippet": "asyncio is built using coroutines , which are special functions that can suspend and resume their execution. Typically, the coroutines will all ...",
         "date": "Jan 30, 2025",
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 8,
@@ -108,7 +115,8 @@
         "source_meta": null,
         "snippet": "Asyncio is a Python library used for writing concurrent, asynchronous code with async / await syntax, often for I/O-bound tasks, high-level structured network ...",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       }
     ],
     "ads": [],

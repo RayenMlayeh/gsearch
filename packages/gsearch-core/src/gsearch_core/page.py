@@ -1,6 +1,8 @@
 """Page fetching for agents: a public http(s) page as readable text and links.
 
-Goes through the proxy when one is configured, so its bytes count against the data limit; else direct.
+Goes through the proxy when one is configured, so its bytes count against the data limit; else direct. With
+`google_only`, only Google's own hops (a result's /goto link) use the proxy and the site itself is fetched
+directly.
 Only public addresses are fetched: a URL from the web must never reach this machine or its network.
 """
 
@@ -9,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import html
 import ipaddress
+import re
 import socket
 from typing import Any
 from urllib.parse import urljoin, urlsplit
@@ -25,6 +28,7 @@ MAX_BYTES = 5_000_000
 MAX_REDIRECTS = 5
 TIMEOUT_S = 20
 _TYPES = ("text/html", "application/xhtml+xml", "text/plain")
+_GOOGLE_HOST = re.compile(r"(^|\.)google(\.[a-z]{2,3}){1,2}$")
 
 
 async def public_address(host: str) -> str:
@@ -38,7 +42,7 @@ async def public_address(host: str) -> str:
     return addresses[0]
 
 
-async def fetch_page(url: str, *, proxy: str | None = None) -> PageContent:
+async def fetch_page(url: str, *, proxy: str | None = None, google_only: bool = False) -> PageContent:
     for _ in range(MAX_REDIRECTS + 1):
         parts = urlsplit(url)
         if parts.scheme not in ("http", "https") or not parts.hostname:
@@ -46,10 +50,11 @@ async def fetch_page(url: str, *, proxy: str | None = None) -> PageContent:
         address = await public_address(parts.hostname)
         port = parts.port or (443 if parts.scheme == "https" else 80)
         pinned = f"[{address}]" if ":" in address else address
+        hop_proxy = proxy if not google_only or _GOOGLE_HOST.search(parts.hostname) else None
         options: dict[CurlOpt, Any] = (
-            {} if proxy else {CurlOpt.RESOLVE: [f"{parts.hostname}:{port}:{pinned}"]}
+            {} if hop_proxy else {CurlOpt.RESOLVE: [f"{parts.hostname}:{port}:{pinned}"]}
         )
-        async with AsyncSession(impersonate=IMPERSONATE, proxy=proxy, curl_options=options) as http:
+        async with AsyncSession(impersonate=IMPERSONATE, proxy=hop_proxy, curl_options=options) as http:
             try:
                 resp = await http.get(url, allow_redirects=False, stream=True, timeout=TIMEOUT_S)
             except Exception as exc:

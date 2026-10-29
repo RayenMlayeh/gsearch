@@ -24,7 +24,8 @@
             "link": "https://www.google.com/goto?url=FIXTURE_8ad428c2c40279c7",
             "url": null
           }
-        ]
+        ],
+        "content": null
       },
       {
         "position": 2,
@@ -36,7 +37,8 @@
         "source_meta": null,
         "snippet": "In part 1, we'll cover the main, high-level building blocks of asyncio : the event loop, coroutine functions, coroutine objects, tasks, and await . Event loop¶.",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 3,
@@ -48,7 +50,8 @@
         "source_meta": null,
         "snippet": "I put together asynchronous-python , a comprehensive and hands-on guide that covers asynchronous programming in Python from core concepts to practical use cases.",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 4,
@@ -60,7 +63,8 @@
         "source_meta": null,
         "snippet": "Use async / await to write structured asynchronous programs, schedule coroutines, and work with networking, subprocesses, and synchronization primitives.",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 5,
@@ -72,7 +76,8 @@
         "source_meta": "2 years ago",
         "snippet": "asyncio provides a framework for managing asynchronous I/O, event loops, coroutines, and tasks in Python . It enables developers to write ...",
         "date": null,
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 6,
@@ -84,7 +89,8 @@
         "source_meta": null,
         "snippet": "Asynchronous Programming with Asyncio in Python. In the example below, we'll create a function and make it asynchronous using the async keyword .",
         "date": "Jul 23, 2025",
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       },
       {
         "position": 7,
@@ -107,7 +113,8 @@
             "link": "https://www.google.com/goto?url=FIXTURE_7d176cab8f499121",
             "url": null
           }
-        ]
+        ],
+        "content": null
       },
       {
         "position": 8,
@@ -119,7 +126,8 @@
         "source_meta": null,
         "snippet": "This tutorial introduces the key concepts of asyncio , leading to a final application to to download user data concurrently from an external API.",
         "date": "Jan 30, 2025",
-        "sitelinks": []
+        "sitelinks": [],
+        "content": null
       }
     ],
     "ads": [],
