@@ -112,9 +112,11 @@ class FixtureFetcher:
     async def fetch(self, req: SearchRequest) -> FetchedPage:
         entry = self._entries.get((req.effective_query().casefold(), req.page))
         if entry is None:
+            queries = list(dict.fromkeys(e.query for e in self._entries.values()))[:10]
+            saved = ", ".join(repr(query) for query in queries) or "(none)"
             raise FetchError(
                 "backend_unavailable",
-                f"no fixture for query={req.effective_query()!r} page={req.page}",
+                f"no fixture for query={req.effective_query()!r} page={req.page}; saved queries: {saved}",
                 retryable=False,
             )
         path = self.directory / entry.file
