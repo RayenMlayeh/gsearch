@@ -5,6 +5,8 @@ GSEARCH_PROXY          one or more proxies in any common format, or the path of 
 GSEARCH_DATA_LIMIT_MB  stop all proxy traffic at this many MB, counted across runs (default: no limit)
 GSEARCH_PAGES_DIRECT   1: fetch_page loads sites from this machine's own IP (faster, no proxy data); Google's
                        own links still go through the proxy
+GSEARCH_SHARE_COOKIES  0: every new proxy device does its own warm-up instead of copying the Google cookies
+                       of a warm one in the same country
 GSEARCH_ENV_FILE       absolute path of the settings file (default: .env in the working directory)
 GSEARCH_FIXTURES_DIR   answer from saved pages instead of Google (demos and tests)
 GSEARCH_STATE_DIR      budgets, data meter and evidence (default %LOCALAPPDATA%\\gsearch or
@@ -70,12 +72,14 @@ def fetcher_from_env(env: Mapping[str, str] | None = None) -> tuple[Fetcher, boo
 
     limit = env.get("GSEARCH_DATA_LIMIT_MB")
     # Behind proxies: a visible browser (headless sessions drew far more CAPTCHAs on residential exits),
-    # queries typed into the address bar, real-device fingerprints, a warm-up for each new device.
+    # queries typed into the address bar, real-device fingerprints, a warm-up or a warm device's cookies for
+    # each new device.
     browser = CamoufoxConfig(
         headless=False,
         entry="address_bar",
         fingerprint_preset=True,
         warmup=WARMUP_PAGES,
+        share_cookies=None if env.get("GSEARCH_SHARE_COOKIES", "").strip() == "0" else "proxy-*.json",
         state_path=state / "state.sqlite",
         evidence_dir=state / "evidence",
     )

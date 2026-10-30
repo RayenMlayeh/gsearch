@@ -245,7 +245,7 @@ python tools/benchmark.py -n 10
 ## 🛠 Reference
 
 <details>
-<summary><b>Settings</b> (six in total; most people need the first two)</summary>
+<summary><b>Settings</b> (seven in total; most people need the first two)</summary>
 
 | Setting | What it does |
 |---|---|
@@ -255,6 +255,7 @@ python tools/benchmark.py -n 10
 | `GSEARCH_FIXTURES_DIR` | Answer from saved pages instead of Google (demos and tests). |
 | `GSEARCH_STATE_DIR` | Where budgets, the data meter and saved block pages live. Default: `%LOCALAPPDATA%\gsearch` or `~/.local/share/gsearch`. |
 | `GSEARCH_PAGES_DIRECT` | `1`: `fetch_page` loads sites from your own IP (faster, no proxy data). Google's own links still go through the proxy. |
+| `GSEARCH_SHARE_COOKIES` | `0`: each new static-proxy port does its own warm-up (~3 min, 13–20 MB). Default: it copies the Google cookies of a warm port in the same country and is ready in seconds; a CAPTCHA on one copy can then follow the others. |
 
 Everything else is fixed to what worked best in testing: a new IP per search with rotating proxies, a
 visible browser, address-bar search, real-device fingerprints, 4 attempts per search, and a 10-minute cache for repeated queries.

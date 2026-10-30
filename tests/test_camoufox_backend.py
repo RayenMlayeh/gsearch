@@ -190,6 +190,7 @@ async def test_live_backend_against_local_fake_google(tmp_path: Path, fake_googl
         assert isinstance(resp, SearchResponse), resp
         assert resp.meta.backend == "camoufox"
         assert len(resp.organic) == 8
+        assert fetcher._profile()["country"] == "US"  # saved at once, so other new devices can copy it
 
         # 2. a CAPTCHA rests the identity and closes the session (next one is a fresh device)
         blocked = await client.search(SearchRequest(query="trigger captcha"))
@@ -308,6 +309,38 @@ async def test_a_block_forgets_the_saved_device_and_cookies(tmp_path: Path) -> N
     fetcher.record_block("captcha")
     assert not fetcher._profile_path.exists()
     await fetcher.aclose()
+
+
+async def test_a_new_device_copies_google_cookies_from_a_warm_one_in_its_country(tmp_path: Path) -> None:
+    us = Place(ip="203.0.113.7", country="US", timezone="America/Chicago", locale="en-US")
+    cfg = dataclasses.replace(
+        _config(tmp_path, "http://127.0.0.1:9"), identity="proxy-new", share_cookies="proxy-*.json"
+    )
+    fetcher = camoufox_backend.CamoufoxFetcher(cfg)  # type: ignore[arg-type]
+    fetcher._place = us
+    later = time.time() + 86400
+    profiles = tmp_path / "profiles"
+    profiles.mkdir()
+
+    def save(name: str, country: str, domain: str, expires: float) -> None:
+        cookie = {"name": "NID", "value": name, "domain": domain, "expires": expires}
+        (profiles / f"{name}.json").write_text(json.dumps({"cookies": [cookie], "country": country}))
+        time.sleep(0.02)  # distinct save times
+
+    save("proxy-warm", "US", ".google.com", later)
+    save("proxy-gb", "GB", ".google.com", later)  # newer, another country
+    save("proxy-expired", "US", ".google.com", time.time() - 1)
+    save("proxy-other-sites", "US", ".bbc.com", later)
+    save("home-direct", "US", ".google.com", later)  # the own IP's cookies never go to a proxy
+    assert [c["value"] for c in fetcher._shared_cookies()] == ["proxy-warm"]
+
+    save("proxy-new", "US", ".google.com", later)  # its own profile is no donor
+    assert [c["value"] for c in fetcher._shared_cookies()] == ["proxy-warm"]
+    off = camoufox_backend.CamoufoxFetcher(dataclasses.replace(cfg, share_cookies=None))  # type: ignore[type-var]
+    off._place = us
+    assert off._shared_cookies() == []
+    await fetcher.aclose()
+    await off.aclose()
 
 
 async def test_behind_a_proxy_a_rest_belongs_to_the_exit_ip(tmp_path: Path) -> None:

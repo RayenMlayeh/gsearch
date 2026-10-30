@@ -163,6 +163,7 @@ class CamoufoxConfig:
         True  # same device and Google cookies across launches; off for one-shot identities
     )
     warmup: tuple[str, ...] = ()  # pages a lasting device without Google cookies opens before searching
+    share_cookies: str | None = None  # glob of profiles a new device may copy Google cookies from instead
 
 
 class CamoufoxFetcher:
@@ -253,6 +254,38 @@ class CamoufoxFetcher:
         tmp.write_text(json.dumps(profile), encoding="utf-8")
         tmp.replace(self._profile_path)
 
+    def _live(self, cookies: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return [c for c in cookies if c.get("expires", -1) > self._wall()]
+
+    def _knows_google(self, cookies: list[dict[str, Any]]) -> bool:
+        google = urlsplit(self.config.base_url).hostname or ""
+        return any("google." in c.get("domain", "") or c.get("domain") == google for c in cookies)
+
+    def _shared_cookies(self) -> list[dict[str, Any]]:
+        """Cookies of the most recently saved other warm profile for the same country, so a new device skips
+        the warm-up. Its own device stays its own."""
+        pattern, place = self.config.share_cookies, self._place
+        if not pattern or place is None:
+            return []
+        newest, shared = 0.0, list[dict[str, Any]]()
+        for path in self._profile_path.parent.glob(pattern):
+            try:
+                profile, saved = json.loads(path.read_text(encoding="utf-8")), path.stat().st_mtime
+            except (OSError, ValueError):  # deleted by a block meanwhile
+                continue
+            if path == self._profile_path or profile.get("country") != place.country or saved <= newest:
+                continue
+            cookies = self._live(profile.get("cookies", []))
+            if self._knows_google(cookies):
+                newest, shared = saved, cookies
+        return shared
+
+    async def _save_cookies(self) -> None:
+        if self.config.persist_profile:
+            country = self._place.country if self._place else None
+            cookies = await self._context.cookies()
+            self._save_profile({**self._profile(), "cookies": cookies, "country": country})
+
     async def _same_device(self, options: dict[str, Any]) -> dict[str, Any]:
         """Launch options for the identity's saved device; the first launch draws it and saves it."""
         profile = self._profile()
@@ -277,7 +310,10 @@ class CamoufoxFetcher:
         self._place = place
         browser = await self._launch(cfg, place)
         self._context = await browser.new_context()
-        cookies = [c for c in self._profile().get("cookies", []) if c.get("expires", -1) > self._wall()]
+        cookies = self._live(self._profile().get("cookies", []))
+        if cfg.persist_profile and not self._knows_google(cookies) and (shared := self._shared_cookies()):
+            log.info("cookies_shared identity=%s", cfg.identity)
+            cookies = shared
         if cfg.persist_profile and cookies:
             await self._context.add_cookies(cookies)
         self._page = await self._context.new_page()
@@ -285,9 +321,7 @@ class CamoufoxFetcher:
         self._page.on("request", self._on_request)
         self._session_hl = hl_hint or (place.language if place else "en")
         self._searches_in_session = 0
-        google = urlsplit(cfg.base_url).hostname or ""
-        known = any("google." in c.get("domain", "") or c.get("domain") == google for c in cookies)
-        if cfg.persist_profile and cfg.warmup and not known:  # other sites' cookies: a warm-up cut short
+        if cfg.persist_profile and cfg.warmup and not self._knows_google(cookies):  # or a warm-up cut short
             await self._warm_up()
         if cfg.entry == "address_bar":
             # A person opens the browser and types a query: nothing loads before the search itself.
@@ -381,10 +415,9 @@ class CamoufoxFetcher:
 
     async def _close_session(self) -> None:
         if self._context is not None:
-            if self.config.persist_profile:
-                # shortcut: cookies the HTTP tier gets after adoption are not saved; Google's are long-lived.
-                with contextlib.suppress(Exception):  # a lost cookie save must not mask the real error
-                    self._save_profile({**self._profile(), "cookies": await self._context.cookies()})
+            # shortcut: cookies the HTTP tier gets after adoption are not saved; Google's are long-lived.
+            with contextlib.suppress(Exception):  # a lost cookie save must not mask the real error
+                await self._save_cookies()
             with contextlib.suppress(Exception):  # teardown must not mask the real error
                 await self._context.close()
         if self._camoufox is not None:
@@ -480,6 +513,9 @@ class CamoufoxFetcher:
                 retry_after = self.record_block(verdict.state.value)
             elif verdict.state in (PageState.JS_GATE, PageState.PARSE_DRIFT, PageState.CONSENT_WALL):
                 evidence_ref = await self._save_evidence(verdict.state.value)
+            elif verdict.state is PageState.OK:
+                with contextlib.suppress(Exception):  # saved now, not at close: other new devices may copy it
+                    await self._save_cookies()
             return FetchedPage(
                 url=url,
                 status=status,
