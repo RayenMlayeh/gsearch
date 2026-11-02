@@ -70,9 +70,13 @@ class Upstream:
             parts = rest.split(":")
             if len(parts) == 2 and parts[1].isdigit():
                 return cls(scheme, parts[0], int(parts[1]))
-            if len(parts) >= 4 and parts[1].isdigit():
+            four = len(parts) >= 4
+            host_first, host_last = four and parts[1].isdigit(), four and parts[-1].isdigit()
+            if host_first and host_last:  # an all-digit password: the host is the side that looks like one
+                host_first = "." in parts[0] or "." not in parts[-2]
+            if host_first:
                 return cls(scheme, parts[0], int(parts[1]), parts[2], ":".join(parts[3:]))
-            if len(parts) >= 4 and parts[-1].isdigit():
+            if host_last:
                 return cls(scheme, parts[-2], int(parts[-1]), parts[0], ":".join(parts[1:-2]))
         raise ValueError(  # never echo the input: it may hold a password
             "unrecognised proxy format: use host:port, host:port:user:pass, user:pass@host:port "

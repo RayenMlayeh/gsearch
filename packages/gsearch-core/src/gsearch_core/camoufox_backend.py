@@ -19,6 +19,7 @@ import math
 import os
 import random
 import re
+import shutil
 import sys
 import time
 from collections.abc import Callable
@@ -64,7 +65,9 @@ WARMUP_PAGES = (
 # a typed navigation (Sec-Fetch-Site: none, no Referer), with no homepage visit before it.
 ADDRESS_BAR_SEARCH = "{base}/search?client=firefox-b-d&q={q}"
 _WINDOWS = ((1536, 864), (1920, 1080), (1440, 900), (1366, 768))
-_BLOCKS = (PageState.CAPTCHA, PageState.HARD_BLOCK)
+BLOCKS = (PageState.CAPTCHA, PageState.HARD_BLOCK)  # the identity rests until tomorrow
+SOFT_BLOCK_RETRY_S = 900  # "slow down" (429/503): the session is dropped, the identity does not rest
+EVIDENCE_KEEP = 200  # newest evidence folders kept; each holds a page and a full-page screenshot
 _PLACE_KEYS = ("geolocation:", "locale:", "timezone", "humanize")
 # Google's EU consent dialog links to consent.google.com; its continue URL carries Google's own view of the
 # visitor's country, which can differ from what IP databases say about the exit.
@@ -132,6 +135,15 @@ def window_for(identity: str) -> tuple[int, int]:
     """Browser window size, stable per identity name."""
     digest = hashlib.blake2b(identity.encode(), digest_size=2).digest()
     return _WINDOWS[int.from_bytes(digest, "big") % len(_WINDOWS)]
+
+
+def evidence_folder(root: Path, name: str) -> Path:
+    """A new folder for a failed page's evidence; older ones beyond EVIDENCE_KEEP are deleted."""
+    folder = root / name
+    folder.mkdir(parents=True, exist_ok=True)
+    for old in sorted(root.iterdir())[:-EVIDENCE_KEEP]:  # names start with a timestamp: oldest first
+        shutil.rmtree(old, ignore_errors=True)
+    return folder
 
 
 def state_dir() -> Path:
@@ -468,8 +480,7 @@ class CamoufoxFetcher:
     async def _save_evidence(self, label: str) -> str | None:
         try:
             stamp = datetime.fromtimestamp(self._wall()).strftime("%Y%m%dT%H%M%S")
-            folder = self.config.evidence_dir / f"{stamp}-{label}"
-            folder.mkdir(parents=True, exist_ok=True)
+            folder = evidence_folder(self.config.evidence_dir, f"{stamp}-{label}")
             (folder / "page.html").write_text(await self._page.content(), encoding="utf-8")
             await self._page.screenshot(path=str(folder / "page.png"), full_page=True)
             (folder / "url.txt").write_text(self._page.url, encoding="utf-8")
@@ -507,10 +518,14 @@ class CamoufoxFetcher:
             verdict = classify(html, url=url, status=status)
             retry_after: int | None = None
             evidence_ref: str | None = None
-            if verdict.state in _BLOCKS:
+            if verdict.state in BLOCKS:
                 evidence_ref = await self._save_evidence(verdict.state.value)
                 await self._close_session()
                 retry_after = self.record_block(verdict.state.value)
+            elif verdict.state is PageState.SOFT_BLOCK:  # marked as a block: the pool tries another exit
+                evidence_ref = await self._save_evidence(verdict.state.value)
+                await self._close_session()
+                retry_after = SOFT_BLOCK_RETRY_S
             elif verdict.state in (PageState.JS_GATE, PageState.PARSE_DRIFT, PageState.CONSENT_WALL):
                 evidence_ref = await self._save_evidence(verdict.state.value)
             elif verdict.state is PageState.OK:

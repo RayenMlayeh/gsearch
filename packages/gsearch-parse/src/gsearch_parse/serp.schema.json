@@ -14,7 +14,6 @@
             "parse_drift",
             "network",
             "proxy",
-            "no_identity_available",
             "backend_unavailable",
             "invalid_request"
           ],
@@ -199,46 +198,6 @@
             "text"
           ],
           "title": "AnswerBox",
-          "type": "object"
-        },
-        "FeaturedSnippet": {
-          "additionalProperties": false,
-          "properties": {
-            "source_link": {
-              "anyOf": [
-                {
-                  "format": "uri",
-                  "minLength": 1,
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": null,
-              "title": "Source Link"
-            },
-            "source_title": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": null,
-              "title": "Source Title"
-            },
-            "text": {
-              "title": "Text",
-              "type": "string"
-            }
-          },
-          "required": [
-            "text"
-          ],
-          "title": "FeaturedSnippet",
           "type": "object"
         },
         "Link": {
@@ -741,16 +700,6 @@
           "title": "Answer Boxes",
           "type": "array"
         },
-        "featured_snippet": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/FeaturedSnippet"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "meta": {
           "$ref": "#/$defs/ResponseMeta"
         },
@@ -793,7 +742,6 @@
         "request",
         "organic",
         "ads",
-        "featured_snippet",
         "ai_overview",
         "people_also_ask",
         "related_searches",

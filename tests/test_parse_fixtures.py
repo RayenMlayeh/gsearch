@@ -86,7 +86,6 @@ def test_forum_result_exposes_metadata_instead_of_breadcrumb() -> None:
 def test_ai_overview_and_people_also_ask() -> None:
     data = parse(fixture_by_id("c2-ai-overview-paa")).data
     assert data is not None
-    assert data.featured_snippet is None  # no classic featured snippet on this page
     assert data.ai_overview is not None
     assert data.ai_overview.text.startswith("The Eiffel Tower is 330 metres (1,083 feet) tall")
     assert "AI Overview" not in data.ai_overview.text[:40]  # UI chrome stripped

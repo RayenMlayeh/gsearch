@@ -153,6 +153,9 @@ async def tunnel(relay_url: str, payload: bytes, *, login: bool = True) -> tuple
         ),
         ("user-u1:pw@proxy.example:1337", ("http", "proxy.example", 1337, "user-u1", "pw")),
         ("user-u1:pw:proxy.example:1337", ("http", "proxy.example", 1337, "user-u1", "pw")),
+        ("user-u1:5555:proxy.example:1337", ("http", "proxy.example", 1337, "user-u1", "5555")),
+        ("proxy.example:1337:user-u1:5555", ("http", "proxy.example", 1337, "user-u1", "5555")),
+        ("localhost:1337:user-u1:5555", ("http", "localhost", 1337, "user-u1", "5555")),
         ("http://user-u1:p%40ss@proxy.example:8080", ("http", "proxy.example", 8080, "user-u1", "p@ss")),
         ("https://u:pw@secure.example:443", ("https", "secure.example", 443, "u", "pw")),
         ("socks5://u:pw@10.0.0.2:1080", ("socks5", "10.0.0.2", 1080, "u", "pw")),
@@ -330,7 +333,7 @@ class FakeHybrid:
     def ready(self) -> bool:
         return self.session and self.browser.rest_s == 0
 
-    async def prewarm(self, query: str) -> None:
+    async def open_session(self, query: str) -> None:
         self.prewarms.append(query)
         await asyncio.sleep(self.prewarm_s)
         if self.browser.config.place.country == "NL":
@@ -506,6 +509,22 @@ async def test_a_block_hands_over_to_the_spare_exit(pool_factory: Any) -> None:
         await pool.aclose()
 
 
+async def test_a_search_does_not_queue_behind_a_spare_being_warmed_up(pool_factory: Any) -> None:
+    pool = pool_factory(proxies=parse_proxies("u:p@10.0.0.1:3128 u:p@10.0.0.2:3128"))
+    try:
+        pool.prewarm()
+        await settle(pool)
+        FakeHybrid.prewarm_s = 0.5  # the spare's warm-up, started after the next search
+        await pool.fetch(SearchRequest(query="a"))
+        await asyncio.sleep(0.05)
+        serving, warming = FakeHybrid.instances
+        pool._members[next(iter(pool._ready()))].busy = 1  # another search is running on the ready exit
+        await pool.fetch(SearchRequest(query="b"))
+        assert serving.fetched == ["a", "b"] and warming.fetched == []
+    finally:
+        await pool.aclose()
+
+
 async def test_an_exit_that_cannot_be_readied_is_left_alone_for_a_while(pool_factory: Any) -> None:
     pool = pool_factory(proxies=parse_proxies("u:p@10.0.0.1:3128 u:p@10.0.0.2:3128"), countries=["NL", "US"])
     try:
@@ -614,7 +633,10 @@ async def test_pages_go_through_the_proxy_and_count_against_the_limit(
     async def public(host: str) -> str:
         return "93.184.215.14"
 
+    from gsearch_core import pool as pool_module
+
     monkeypatch.setattr(page, "public_address", public)
+    monkeypatch.setattr(pool_module, "PAGE_RELAY_GRACE_S", 0.0)
     pool = pool_factory(byte_cap_bytes=1_000_000)
     try:
         relay_url = await pool.page_proxy()
@@ -628,6 +650,10 @@ async def test_pages_go_through_the_proxy_and_count_against_the_limit(
         assert upstream.heads[-1].startswith(b"GET http://www.google.com/goto")  # Google's hop: proxied
         await pool.drop_page_proxy(relay_url)
         assert await pool.page_proxy() != relay_url  # a failed page exit is replaced
+        await settle(pool)
+        old = urlsplit(relay_url)
+        with pytest.raises(ConnectionRefusedError):  # and the old relay is closed, not kept until shutdown
+            await asyncio.open_connection(old.hostname, old.port)
         pool.meter.add(2_000_000)
         with pytest.raises(FetchError) as err:
             await pool.page_proxy()

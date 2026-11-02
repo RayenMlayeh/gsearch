@@ -107,7 +107,6 @@ class SearchClient:
                 request=req,
                 organic=organic,
                 ads=data.ads,
-                featured_snippet=data.featured_snippet,
                 ai_overview=data.ai_overview,
                 people_also_ask=data.people_also_ask,
                 related_searches=data.related_searches,

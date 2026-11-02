@@ -102,12 +102,6 @@ class Ad(_Model):
     snippet: str | None = None
 
 
-class FeaturedSnippet(_Model):
-    text: str
-    source_title: str | None = None
-    source_link: AnyHttpUrl | None = None
-
-
 class AIOverview(_Model):
     text: str
     sources: list[Link] = Field(default_factory=list)
@@ -147,7 +141,6 @@ class PageState(StrEnum):
 class SerpData(_Model):
     organic: list[OrganicResult] = Field(default_factory=list)
     ads: list[Ad] = Field(default_factory=list)
-    featured_snippet: FeaturedSnippet | None = None
     ai_overview: AIOverview | None = None
     people_also_ask: list[PeopleAlsoAsk] = Field(default_factory=list)
     related_searches: list[str] = Field(default_factory=list)
@@ -175,7 +168,6 @@ class SearchResponse(_Model):
     request: SearchRequest
     organic: list[OrganicResult]
     ads: list[Ad]
-    featured_snippet: FeaturedSnippet | None
     ai_overview: AIOverview | None
     people_also_ask: list[PeopleAlsoAsk]
     related_searches: list[str]
@@ -198,7 +190,6 @@ ErrorCode = Literal[
     "parse_drift",
     "network",
     "proxy",
-    "no_identity_available",
     "backend_unavailable",
     "invalid_request",
 ]

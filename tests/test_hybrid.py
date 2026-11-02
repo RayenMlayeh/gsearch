@@ -76,6 +76,8 @@ def fake() -> Iterator[tuple[str, Seen]]:
                 self.send_header("Location", "/sorry/index?continue=/search")
                 self.end_headers()
                 return
+            elif parts.path == "/search" and q == "slow down":
+                body, status = "<html><body>Too many requests</body></html>", 429
             elif parts.path == "/sorry/index":
                 body, status = "<html>IP address: 203.0.113.9</html>", 429
             elif q == "long page":  # like live Google: script and image data after the results
@@ -291,8 +293,41 @@ async def test_gate_over_http_remints_in_browser(fake: tuple[str, Seen]) -> None
         assert browser.fetches == 2
         assert fetcher.stats["remints"] == 1
         assert browser.admitted == [False, True]  # the redone search does not take a second token
+        assert browser.searches == 2  # nor counts twice against the daily cap
     finally:
         await fetcher.aclose()
+
+
+async def test_a_slow_down_over_http_is_a_block_without_rest(fake: tuple[str, Seen], tmp_path: Path) -> None:
+    base, _ = fake
+    browser = FakeBrowser(base)
+    browser.config.evidence_dir = tmp_path
+    fetcher = hybrid.HybridFetcher(browser)
+    try:
+        await fetcher.fetch(SearchRequest(query="first"))
+        page = await fetcher.fetch(SearchRequest(query="slow down"))
+        assert page.block_retry_after_s == 900  # the pool tries another exit
+        assert browser.blocks == [] and fetcher.status()["http_session"] is False
+    finally:
+        await fetcher.aclose()
+
+
+def test_evidence_keeps_only_the_newest_folders(tmp_path: Path) -> None:
+    from gsearch_core.camoufox_backend import EVIDENCE_KEEP, evidence_folder
+
+    for i in range(EVIDENCE_KEEP + 5):
+        evidence_folder(tmp_path, f"20261101T{i:06d}-captcha")
+    names = sorted(p.name for p in tmp_path.iterdir())
+    assert len(names) == EVIDENCE_KEEP and names[0] == "20261101T000005-captcha"
+
+
+async def test_the_mcp_server_starts_on_the_home_ip_backend(fake: tuple[str, Seen]) -> None:
+    from gsearch_mcp.server import build_server
+    from mcp import Client
+
+    fetcher = hybrid.HybridFetcher(FakeBrowser(fake[0]))  # what fetcher_from_env gives without a proxy
+    async with Client(build_server(SearchClient(fetcher), live=True)) as client:
+        assert "google_search" in {t.name for t in (await client.list_tools()).tools}
 
 
 async def test_block_over_http_rests_identity_and_drops_session(fake: tuple[str, Seen]) -> None:

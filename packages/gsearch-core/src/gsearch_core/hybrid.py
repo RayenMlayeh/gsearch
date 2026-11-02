@@ -33,7 +33,7 @@ from gsearch_parse.classify import classify
 from gsearch_parse.models import PageState, SearchRequest
 from gsearch_parse.redirect import redirect_target
 
-from .camoufox_backend import GOOGLE_ORIGIN, CamoufoxFetcher
+from .camoufox_backend import BLOCKS, GOOGLE_ORIGIN, SOFT_BLOCK_RETRY_S, CamoufoxFetcher, evidence_folder
 from .fetch import FetchedPage, FetchError, build_search_url
 
 log = logging.getLogger(__name__)
@@ -61,7 +61,6 @@ FIREFOX152_CIPHERS = ":".join(
     ]
 )
 _DROP = {"host", "connection", "alt-used", "cookie", "content-length", "referer", "te"}
-_BLOCKS = (PageState.CAPTCHA, PageState.HARD_BLOCK)
 RESOLVE_CONCURRENCY = 3
 RESOLVE_TIMEOUT_S = 10.0
 SEARCH_TIMEOUT_S = 10.0  # Google answers in under 3 s; longer means the exit is gone
@@ -92,7 +91,8 @@ class HybridFetcher:
         """A session is open and the identity may search now: the next search is a fast HTTP one."""
         return self._adopted and self.browser.ready_in_s() == 0
 
-    async def prewarm(self, query: str) -> None:
+    # Not named `prewarm`: the MCP server calls any backend's `prewarm()` with no argument at start.
+    async def open_session(self, query: str) -> None:
         """Open the session before it is needed (a new device's warm-up included) with one everyday search."""
         async with self._lock:
             if not self._adopted:
@@ -173,7 +173,6 @@ class HybridFetcher:
                     retryable=True,
                     retry_after_s=30,
                 ) from exc
-            self.browser.record_search()
             self.browser.note_used()
             self._absorb_cookies(resp)
             size = len(body)
@@ -183,8 +182,18 @@ class HybridFetcher:
             html = body.decode(resp.encoding or "utf-8", errors="replace")
             verdict = classify(html, url=str(resp.url), status=resp.status_code, headers=headers)
             log.info("hybrid_http_search status=%s state=%s bytes=%s", resp.status_code, verdict.state, size)
-            if verdict.state in _BLOCKS:
-                retry_after = self.browser.record_block(f"{verdict.state.value} (http)")
+            if verdict.state is PageState.JS_GATE:
+                # The session no longer satisfies the gate: re-open it in the real browser.
+                self._drop_session("js_gate")
+                self.stats["remints"] += 1
+                # This search already took its budget, and the browser records it: count it once.
+                return await self._browser_search(req, admitted=True)
+            self.browser.record_search()
+            if verdict.state in BLOCKS or verdict.state is PageState.SOFT_BLOCK:
+                if verdict.state is PageState.SOFT_BLOCK:  # "slow down": drop the session, no rest
+                    retry_after = SOFT_BLOCK_RETRY_S
+                else:
+                    retry_after = self.browser.record_block(f"{verdict.state.value} (http)")
                 evidence = await self._save_evidence(verdict.state.value, str(resp.url), html, headers)
                 self._drop_session(verdict.state.value)
                 return FetchedPage(
@@ -197,11 +206,6 @@ class HybridFetcher:
                     block_retry_after_s=retry_after,
                     evidence_ref=evidence,
                 )
-            if verdict.state is PageState.JS_GATE:
-                # The session no longer satisfies the gate: re-open it in the real browser.
-                self._drop_session("js_gate")
-                self.stats["remints"] += 1
-                return await self._browser_search(req, admitted=True)  # this search already took its budget
             return FetchedPage(
                 url=str(resp.url),
                 status=resp.status_code,
@@ -239,8 +243,7 @@ class HybridFetcher:
             log.info("hybrid_evidence_fetch_failed url=%s", url)
         try:
             stamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-            folder = self.config.evidence_dir / f"{stamp}-{label}-http"
-            folder.mkdir(parents=True, exist_ok=True)
+            folder = evidence_folder(self.config.evidence_dir, f"{stamp}-{label}-http")
             (folder / "page.html").write_text(html, encoding="utf-8")
             place = self.config.place
             exit_ip = place.ip if place else "direct"

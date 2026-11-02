@@ -48,6 +48,7 @@ DEAD_S = 600.0  # a static proxy that failed its location check, or is resting, 
 WARM_WAIT_S = 15.0  # a session from saved cookies opens in ~11 s; a new device takes minutes
 SPARES = 2  # static exits kept with a session open
 EXIT_CHECK_S = 180.0
+PAGE_RELAY_GRACE_S = 120.0  # pages still reading through a dropped page relay finish within this
 PREWARM_QUERIES = ("weather", "news", "football scores", "translate", "bbc news", "maps")
 
 
@@ -102,9 +103,10 @@ class ProxyPool:
         self._dead_until: dict[str, float] = {}
         self._country: dict[str, str] = {}  # static proxy -> the country its device was made for
         self._page_relay: Relay | None = None
-        self._old_page_relays: list[Relay] = []
         self._turn = 0
         self._lock = asyncio.Lock()
+        # Its own lock: page reads must not wait behind an exit lookup (up to a minute on a dead proxy).
+        self._page_lock = asyncio.Lock()
         self._warming: asyncio.Task[None] | None = None
         self._tasks: set[asyncio.Task[None]] = set()
         self._slots = asyncio.Semaphore(PARALLEL if self.rotating else len(config.proxies))
@@ -228,7 +230,11 @@ class ProxyPool:
         member: Member | None = None
         try:
             member = await self._next_static(self._ready())
-            await member.fetcher.prewarm(self._rng.choice(PREWARM_QUERIES))
+            member.busy += 1  # a search must not queue behind a warm-up that can take minutes
+            try:
+                await member.fetcher.open_session(self._rng.choice(PREWARM_QUERIES))
+            finally:
+                member.busy -= 1
         except Exception as exc:  # the next search reports the real error
             none_free = isinstance(exc, FetchError) and exc.code == "rate_limited"
             log.log(logging.INFO if none_free else logging.WARNING, "pool_prewarm_failed: %s", exc)
@@ -356,7 +362,7 @@ class ProxyPool:
 
     async def page_proxy(self) -> str:
         self._check_limit()
-        async with self._lock:
+        async with self._page_lock:
             if self._page_relay is None:
                 upstream = self._rng.choice(self.config.proxies).with_session(self._rng)
                 self._page_relay = Relay(upstream, self.meter, tag="pages")
@@ -365,11 +371,17 @@ class ProxyPool:
 
     async def drop_page_proxy(self, url: str) -> None:
         """A page fetch through `url` failed: the next one goes through a new exit. The old relay is closed
-        at shutdown, not now, so other pages still reading through it finish."""
-        async with self._lock:
+        after PAGE_RELAY_GRACE_S, not now, so other pages still reading through it finish."""
+        async with self._page_lock:
             if self._page_relay is not None and self._page_relay.url == url:
-                self._old_page_relays.append(self._page_relay)
+                self._background(self._close_later(self._page_relay))
                 self._page_relay = None
+
+    async def _close_later(self, relay: Relay) -> None:
+        try:
+            await asyncio.sleep(PAGE_RELAY_GRACE_S)
+        finally:  # at shutdown too
+            await relay.close()
 
     # ---------------------------------------------------------------- status
     def status(self) -> dict[str, str | int | float | bool | None]:
@@ -387,9 +399,9 @@ class ProxyPool:
     async def aclose(self) -> None:
         for task in list(self._tasks):
             task.cancel()
+        await asyncio.gather(*self._tasks, return_exceptions=True)  # dropped page relays close here
         for member in list(self._members.values()):
             await self._retire(member, "shutdown")
-        for relay in [self._page_relay, *self._old_page_relays]:
-            if relay is not None:
-                await relay.close()
+        if self._page_relay is not None:
+            await self._page_relay.close()
         self.meter.save()
