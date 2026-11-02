@@ -111,10 +111,11 @@ with `uvx --from gsearch-agent gsearch setup`.
 [F-0001](docs/findings/F-0001-cold-start-chrome-vs-camoufox.md): Playwright Chrome was sent to a CAPTCHA 2 of 2
 times on an IP where gsearch was served. Read [Legal](#-legal-and-responsible-use) before running live searches.</sub>
 
-<p align="center"><img src="docs/assets/results.svg" alt="Results: 24 of 24 searches served with 0 CAPTCHAs on a home IP, 1.2 s per search on a warm session, 0.6 MB per search on a clean proxy IP, every link resolved to its real URL" width="100%"></p>
+<p align="center"><img src="docs/assets/results.svg" alt="Results: 24 of 24 searches served with 0 CAPTCHAs on a home IP, 0.6 s per search on a warm session and 2 s with the top 3 pages read, 0.6 MB per search on a clean proxy IP, every link resolved to its real URL" width="100%"></p>
 
 <p align="center"><sub>
-Measured in October 2026:
+Measured in October and November 2026:
+<a href="docs/findings/F-0016-home-ip-warm-search-and-read-top.md">F-0016</a>,
 <a href="docs/findings/F-0014-eh1-hybrid-session-reuse.md">F-0014</a>,
 <a href="docs/findings/F-0006-fixture-provenance-and-serp-anatomy.md">F-0006</a>,
 <a href="docs/findings/F-0011-goto-resolution-leak-and-fix.md">F-0011</a>,
@@ -232,9 +233,19 @@ IP costs a browser launch (about 0.7–1 MB and 20 s) before the next one is tri
 | Searches per hour (3 browsers) | ~500–600 | ~72 |
 | 1,000 searches | ~0.6–1 GB, under 2 hours | ~5–6.5 GB, ~14 hours |
 
-Without a proxy, a warm session on your own IP takes **~1.2 s per search**, with every link resolved and 0
-CAPTCHAs in testing ([F-0014](docs/findings/F-0014-eh1-hybrid-session-reuse.md)), capped at 20 searches an
-hour to protect your IP. Static proxies have not been benchmarked yet.
+Without a proxy, your own IP is capped at 20 searches an hour to protect it, with 0 CAPTCHAs in testing:
+
+| Own IP, no proxy | Measured |
+|---|---|
+| First search (the browser opens the session) | ~17 s |
+| Search on a warm session | **~0.6 s** |
+| Search with `read_top=3` (the top 3 pages' text included) | **~2 s** |
+| `fetch_page` on a result | ~1 s |
+| Search with `resolve_links` (every real URL up front) | ~1.2 s |
+
+From [F-0016](docs/findings/F-0016-home-ip-warm-search-and-read-top.md) (November 2026) and
+[F-0014](docs/findings/F-0014-eh1-hybrid-session-reuse.md) for `resolve_links`; one session each, so
+anecdotes rather than rates. Static proxies have not been benchmarked yet.
 
 **Measure your own proxy** within your data limit:
 
@@ -326,7 +337,7 @@ When the browser hits a block or an error, the page is saved with a screenshot i
 
 ## ❓ FAQ
 
-**Do I need a proxy?** No. Without one, gsearch uses your own IP with a warm session (~1.2 s per search),
+**Do I need a proxy?** No. Without one, gsearch uses your own IP with a warm session (~0.6 s per search),
 capped at 20 searches an hour and 150 a day to keep your IP clean. For volume, use a proxy.
 
 **Which proxy should I buy?** A rotating residential proxy with sticky sessions (a session id in the

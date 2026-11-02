@@ -42,3 +42,4 @@ codebase); the numbering is kept so citations stay stable.
 | [F-0013](F-0013-tls-camoufox-vs-curl-cffi.md) | TLS ClientHello: Camoufox vs curl_cffi Firefox profiles; exact match with a cipher override | local harness |
 | [F-0014](F-0014-eh1-hybrid-session-reuse.md) | E-H1: browser-opened session keeps working over plain HTTP; ~1.2 s per search | 1 session, 5 searches |
 | [F-0015](F-0015-b1-residential-proxy-benchmark.md) | B-1: residential proxy pool (US): most fresh exits rejected after the JS gate; one-shot mode 7/10 at 4.7 MB | ~110 exits, 1 evening |
+| [F-0016](F-0016-home-ip-warm-search-and-read-top.md) | Home IP after read_top: ~0.6 s per warm search, ~2 s with the top 3 pages read | 1 session, 5 searches |

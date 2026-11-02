@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="t d">
   <title id="t">Results</title>
-  <desc id="d">Measured: 24 of 24 searches served with 0 CAPTCHAs on a home IP; 1.2 seconds per search on a warm session on your own IP and 14 seconds with a fresh proxy IP and browser; 0.6 MB per search on a clean proxy IP; every result link resolved to its real URL.</desc>
+  <desc id="d">Measured: 24 of 24 searches served with 0 CAPTCHAs on a home IP; 0.6 seconds per search on a warm session on your own IP, 2 seconds with the top 3 pages read, and 14 seconds with a fresh proxy IP and browser; 0.6 MB per search on a clean proxy IP; every result link resolved to its real URL.</desc>
   <defs>
     <style>
       .f { font-family: "Google Sans", "Product Sans", Roboto, "Segoe UI", Arial, sans-serif; }
@@ -8,7 +8,7 @@
   </defs>
   <rect x="0.5" y="0.5" width="1199" height="399" rx="20" fill="#ffffff" stroke="#dadce0"/>
   <text x="40" y="54" class="f" font-size="26" font-weight="500" fill="#202124">Results</text>
-  <text x="140" y="54" class="f" font-size="16" fill="#5f6368">measured October 2026 · speed on your own IP, data on a clean proxy IP</text>
+  <text x="140" y="54" class="f" font-size="16" fill="#5f6368">measured October–November 2026 · speed on your own IP, data on a clean proxy IP</text>
 
   <!-- served -->
   <g transform="translate(40 84)">
@@ -23,11 +23,11 @@
   <!-- speed -->
   <g transform="translate(322 84)">
     <rect width="262" height="230" rx="18" fill="#e8f0fe"/>
-    <text x="28" y="94" class="f" font-size="64" font-weight="700" fill="#1967d2">1.2 s</text>
+    <text x="28" y="94" class="f" font-size="64" font-weight="700" fill="#1967d2">0.6 s</text>
     <text x="28" y="132" class="f" font-size="19" font-weight="500" fill="#202124">per search</text>
-    <text x="28" y="160" class="f" font-size="15" fill="#3c4043">own IP, warm session, links</text>
-    <text x="28" y="180" class="f" font-size="15" fill="#3c4043">resolved · 14 s with a</text>
-    <text x="28" y="200" class="f" font-size="15" fill="#3c4043">fresh proxy IP and browser</text>
+    <text x="28" y="160" class="f" font-size="15" fill="#3c4043">own IP, warm session · 2 s</text>
+    <text x="28" y="180" class="f" font-size="15" fill="#3c4043">with the top 3 pages read</text>
+    <text x="28" y="200" class="f" font-size="15" fill="#3c4043">· 14 s on a fresh proxy IP</text>
   </g>
 
   <!-- data -->
