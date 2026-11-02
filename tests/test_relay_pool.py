@@ -542,7 +542,7 @@ async def test_a_static_exit_that_changes_ip_is_looked_up_again(pool_factory: An
     try:
         await pool.fetch(SearchRequest(query="a"))
         (member,) = pool._members.values()
-        member.located_at = 0.0  # last looked up long ago
+        member.located_at = float("-inf")  # last looked up long ago (0.0 is recent on a just-booted CI VM)
         pool._locate = _locate_at("198.51.100.4")
         await pool.fetch(SearchRequest(query="b"))
         await settle(pool)
@@ -564,7 +564,7 @@ async def test_a_static_exit_that_moves_to_another_country_is_dropped(pool_facto
     try:
         await pool.fetch(SearchRequest(query="a"))
         (member,) = pool._members.values()
-        member.located_at = 0.0
+        member.located_at = float("-inf")
         pool._locate = _locate_at("189.218.3.209", "MX")  # seen today: a London port moved to Mexico
         await pool.fetch(SearchRequest(query="b"))
         await settle(pool)

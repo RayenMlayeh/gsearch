@@ -286,6 +286,7 @@ async def test_a_new_device_warms_up_before_its_first_search(tmp_path: Path, fak
         await fetcher.aclose()
 
 
+@pytest.mark.skipif(os.environ.get("GSEARCH_SKIP_BROWSER") == "1", reason="GSEARCH_SKIP_BROWSER=1")
 async def test_a_lasting_identity_keeps_its_device_across_launches(tmp_path: Path) -> None:
     place = Place(ip="203.0.113.7", country="US", timezone="America/Chicago", locale="en-US")
     cfg = dataclasses.replace(_config(tmp_path, "http://127.0.0.1:9"), fingerprint_preset=True, place=place)
@@ -300,6 +301,7 @@ async def test_a_lasting_identity_keeps_its_device_across_launches(tmp_path: Pat
     assert not any(k.startswith(("timezone", "locale:", "geolocation:")) for k in first["config"])
 
 
+@pytest.mark.skipif(os.environ.get("GSEARCH_SKIP_BROWSER") == "1", reason="GSEARCH_SKIP_BROWSER=1")
 async def test_a_block_forgets_the_saved_device_and_cookies(tmp_path: Path) -> None:
     place = Place(ip="203.0.113.7", country="US", timezone="America/Chicago", locale="en-US")
     cfg = dataclasses.replace(_config(tmp_path, "http://127.0.0.1:9"), fingerprint_preset=True, place=place)
