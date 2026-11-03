@@ -111,7 +111,7 @@ with `uvx --from gsearch-agent gsearch setup`.
 [F-0001](docs/findings/F-0001-cold-start-chrome-vs-camoufox.md): Playwright Chrome was sent to a CAPTCHA 2 of 2
 times on an IP where gsearch was served. Read [Legal](#-legal-and-responsible-use) before running live searches.</sub>
 
-<p align="center"><img src="docs/assets/results.svg" alt="Results: 24 of 24 searches served with 0 CAPTCHAs on a home IP, 0.6 s per search on a warm session and 2 s with the top 3 pages read, 0.6 MB per search on a clean proxy IP, every link resolved to its real URL" width="100%"></p>
+<p align="center"><img src="docs/assets/results.svg" alt="Results: 29 of 29 searches served with 0 CAPTCHAs on a home IP, 0.6 s per search on a warm session, 2 s for a search plus the text of its top 3 pages, 0.6 MB per search on a clean proxy IP" width="100%"></p>
 
 <p align="center"><sub>
 Measured in October and November 2026:
@@ -127,7 +127,7 @@ Flagged proxy pools are slower: see <a href="#-performance">Performance</a>.
 
 ## ✨ Why gsearch
 
-<p align="center"><img src="docs/assets/why.svg" alt="Same IP: plain HTTP gets 0 results, automated Chrome gets a CAPTCHA 2 of 2 times, gsearch is served 24 of 24" width="100%"></p>
+<p align="center"><img src="docs/assets/why.svg" alt="Same IP: plain HTTP gets 0 results, automated Chrome gets a CAPTCHA 2 of 2 times, gsearch is served 29 of 29" width="100%"></p>
 
 Google's official search API is closed to new customers and shuts down on 1 January 2027
 ([F-0005](docs/findings/F-0005-custom-search-api-sunset.md)). gsearch is built for AI agents instead:

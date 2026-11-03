@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="t d">
   <title id="t">Results</title>
-  <desc id="d">Measured: 24 of 24 searches served with 0 CAPTCHAs on a home IP; 0.6 seconds per search on a warm session on your own IP, 2 seconds with the top 3 pages read, and 14 seconds with a fresh proxy IP and browser; 0.6 MB per search on a clean proxy IP; every result link resolved to its real URL.</desc>
+  <desc id="d">Measured: 29 of 29 searches served with 0 CAPTCHAs over 6 test runs on a home IP; 0.6 seconds per search on a warm session on your own IP; 2 seconds for a search plus the text of its top 3 pages; 0.6 MB of proxy data per search on a clean proxy IP.</desc>
   <defs>
     <style>
       .f { font-family: "Google Sans", "Product Sans", Roboto, "Segoe UI", Arial, sans-serif; }
@@ -13,11 +13,11 @@
   <!-- served -->
   <g transform="translate(40 84)">
     <rect width="262" height="230" rx="18" fill="#e6f4ea"/>
-    <text x="28" y="94" class="f" font-size="64" font-weight="700" fill="#137333">24/24</text>
+    <text x="28" y="94" class="f" font-size="64" font-weight="700" fill="#137333">29/29</text>
     <text x="28" y="132" class="f" font-size="19" font-weight="500" fill="#202124">searches served</text>
     <rect x="28" y="152" width="138" height="32" rx="16" fill="#34A853"/>
     <text x="97" y="174" class="f" font-size="16" font-weight="700" text-anchor="middle" fill="#ffffff">0 CAPTCHAs</text>
-    <text x="28" y="210" class="f" font-size="13" fill="#5f6368">5 test runs on a home IP</text>
+    <text x="28" y="210" class="f" font-size="13" fill="#5f6368">6 test runs on a home IP</text>
   </g>
 
   <!-- speed -->
@@ -25,14 +25,24 @@
     <rect width="262" height="230" rx="18" fill="#e8f0fe"/>
     <text x="28" y="94" class="f" font-size="64" font-weight="700" fill="#1967d2">0.6 s</text>
     <text x="28" y="132" class="f" font-size="19" font-weight="500" fill="#202124">per search</text>
-    <text x="28" y="160" class="f" font-size="15" fill="#3c4043">own IP, warm session · 2 s</text>
-    <text x="28" y="180" class="f" font-size="15" fill="#3c4043">with the top 3 pages read</text>
-    <text x="28" y="200" class="f" font-size="15" fill="#3c4043">· 14 s on a fresh proxy IP</text>
+    <text x="28" y="160" class="f" font-size="15" fill="#3c4043">on a warm session, own IP</text>
+    <text x="28" y="180" class="f" font-size="15" fill="#3c4043">(~17 s for the first one, while</text>
+    <text x="28" y="200" class="f" font-size="15" fill="#3c4043">the browser opens it)</text>
+  </g>
+
+  <!-- read_top -->
+  <g transform="translate(604 84)">
+    <rect width="262" height="230" rx="18" fill="#fce8e6"/>
+    <text x="28" y="94" class="f" font-size="64" font-weight="700" fill="#c5221f">2 s</text>
+    <text x="28" y="132" class="f" font-size="19" font-weight="500" fill="#202124">search + top 3 pages</text>
+    <text x="28" y="160" class="f" font-size="15" fill="#3c4043">results and the text of the</text>
+    <text x="28" y="180" class="f" font-size="15" fill="#3c4043">top 3 pages in one call,</text>
+    <text x="28" y="200" class="f" font-size="15" fill="#3c4043">instead of four</text>
   </g>
 
   <!-- data -->
-  <g transform="translate(604 84)">
-    <rect width="262" height="230" rx="18" fill="#fef7e0"/>
+  <g transform="translate(886 84)">
+    <rect width="274" height="230" rx="18" fill="#fef7e0"/>
     <text x="28" y="94" class="f" font-size="64" font-weight="700" fill="#b06000">0.6 MB</text>
     <text x="28" y="132" class="f" font-size="19" font-weight="500" fill="#202124">per search</text>
     <text x="28" y="160" class="f" font-size="15" fill="#3c4043">of proxy data, on a clean</text>
@@ -40,16 +50,6 @@
     <text x="28" y="200" class="f" font-size="15" fill="#3c4043">are never downloaded</text>
   </g>
 
-  <!-- links -->
-  <g transform="translate(886 84)">
-    <rect width="274" height="230" rx="18" fill="#fce8e6"/>
-    <text x="28" y="94" class="f" font-size="64" font-weight="700" fill="#c5221f">100%</text>
-    <text x="28" y="132" class="f" font-size="19" font-weight="500" fill="#202124">real URLs</text>
-    <text x="28" y="160" class="f" font-size="15" fill="#3c4043">every result link resolved</text>
-    <text x="28" y="180" class="f" font-size="15" fill="#3c4043">from Google's redirect to</text>
-    <text x="28" y="200" class="f" font-size="15" fill="#3c4043">the page it points to</text>
-  </g>
-
-  <text x="40" y="350" class="f" font-size="15" fill="#3c4043">Expected with a high-quality residential proxy: ~15–20 s and ~0.6–1 MB per search, ~500–600 searches an hour with 3 browsers.</text>
+  <text x="40" y="350" class="f" font-size="15" fill="#3c4043">Every result link leads to its real page. With a high-quality residential proxy, expect ~15–20 s and ~0.6–1 MB per search.</text>
   <text x="40" y="374" class="f" font-size="14" fill="#5f6368">Flagged proxy pools are slower and use more data: see Performance. Every number is backed by a findings file.</text>
 </svg>
