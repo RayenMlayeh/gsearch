@@ -55,6 +55,14 @@ async def test_missing_fixture_is_backend_error() -> None:
     assert isinstance(resp, SearchError) and resp.code == "backend_unavailable" and not resp.retryable
 
 
+async def test_missing_fixture_lists_saved_queries() -> None:
+    resp = await client().search(SearchRequest(query="not captured"))
+    assert isinstance(resp, SearchError)
+    assert "saved queries:" in resp.message
+    assert "what is asyncio in python" in resp.message
+    assert "page=1" in resp.message
+
+
 async def test_cache_hit_is_flagged() -> None:
     c = client()
     first = await c.search(SearchRequest(query="wikipedia"))
