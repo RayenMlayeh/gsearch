@@ -51,15 +51,15 @@ RESULTS_READY_JS = (
 )
 CLICK_TIMEOUT_MS = 5_000
 REJECT_ALL = "#W0wltc"  # "Reject all" in Google's consent dialog, same id in every language
-# Ordinary pages a new device opens before its first search: a fresh browser on a fresh exit is refused on
-# its first search far more often (nodemaven/google-browser-scraper's "light" ladder; google.com comes
-# first among Google's pages so its consent dialog is answered there).
+# What a new device behind a proxy reads before its first search, as someone living at the exit would: a
+# fresh browser on a fresh exit is refused on its first search far more often. {lang} and {country} come
+# from the exit IP, and the articles are random, so every device gets a history of its own. Google's
+# homepage comes before Google News: its consent answer then covers both.
 WARMUP_PAGES = (
-    "https://www.theverge.com/",
-    "https://www.wikihow.com/Main-Page",
-    "https://www.google.com/imghp?hl=en",
-    "https://translate.google.com/?hl=en",
-    "https://scholar.google.com/?hl=en",
+    "https://{lang}.wikipedia.org/wiki/Special:Random",
+    "https://{lang}.wikipedia.org/wiki/Special:Random",
+    "https://www.google.com/?hl={lang}",
+    "https://news.google.com/home?hl={lang}&gl={country}&ceid={country}:{lang}",
 )
 # What Firefox on Windows sends when a query is typed into the address bar with Google as search engine:
 # a typed navigation (Sec-Fetch-Site: none, no Referer), with no homepage visit before it.
@@ -129,6 +129,12 @@ def device_config(options: dict[str, Any]) -> dict[str, Any]:
     chunks = sorted((int(k.rsplit("_", 1)[1]), v) for k, v in env.items() if k.startswith("CAMOU_CONFIG_"))
     config: dict[str, Any] = json.loads("".join(v for _, v in chunks))
     return {k: v for k, v in config.items() if not k.startswith(_PLACE_KEYS)}
+
+
+def warmup_urls(templates: tuple[str, ...], place: Place | None) -> list[str]:
+    """Warm-up pages in the exit's language and country (English and US when the exit is not located)."""
+    lang, country = (place.language, place.country) if place else ("en", "US")
+    return [t.replace("{lang}", lang).replace("{country}", country) for t in templates]
 
 
 def window_for(identity: str) -> tuple[int, int]:
@@ -349,18 +355,27 @@ class CamoufoxFetcher:
         await asyncio.sleep(lognormal_between(self._rng, 1.5, 4.0))
 
     async def _warm_up(self) -> None:
-        """Open each warm-up page and stay on it, like a person reading. A page that fails to load is
-        skipped; Google's consent dialog is answered on the way."""
+        """Read each warm-up page like someone at the exit: in its language, for a human-shaped while,
+        scrolling on. A page that fails to load is skipped; Google's consent dialog is answered on the way."""
         p = self.config.policy
-        for url in self.config.warmup:
+        for url in warmup_urls(self.config.warmup, self._place):
             try:
                 await self._page.goto(url, wait_until="domcontentloaded", timeout=self.config.nav_timeout_ms)
             except Exception as exc:  # a slow or broken third-party page must not cost the session
                 log.info("warmup_page_failed url=%s error=%s", url, type(exc).__name__)
                 continue
             await self._pass_consent()
-            await asyncio.sleep(self._rng.uniform(p.warmup_dwell_min_s, p.warmup_dwell_max_s))
+            await self._read(lognormal_between(self._rng, p.warmup_dwell_min_s, p.warmup_dwell_max_s))
         await self._page.goto("about:blank")  # a new tab: the search is typed into the address bar
+
+    async def _read(self, seconds: float) -> None:
+        """Stay on the page for `seconds`, scrolling down a little every few seconds as a reader does."""
+        while seconds > 0:
+            pause = min(seconds, self._rng.uniform(3.0, 9.0))
+            await asyncio.sleep(pause)
+            seconds -= pause
+            with contextlib.suppress(Exception):  # a page that ignores the wheel is still read
+                await self._page.mouse.wheel(0, self._rng.randint(250, 700))
 
     async def _launch(self, cfg: CamoufoxConfig, place: Place | None) -> Any:
         """Start the browser. A real-device preset can name a GPU that Camoufox has no WebGL data for

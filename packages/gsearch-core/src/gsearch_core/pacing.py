@@ -16,8 +16,8 @@ class PacingPolicy:
     searches_per_day: int = 150
     think_min_s: float = 2.0
     think_max_s: float = 9.0
-    warmup_dwell_min_s: float = 20.0
-    warmup_dwell_max_s: float = 45.0
+    warmup_dwell_min_s: float = 15.0  # reading one warm-up page: lognormal, so most stays sit near the middle
+    warmup_dwell_max_s: float = 60.0
 
 
 def lognormal_between(rng: random.Random, low: float, high: float, sigma: float = 0.45) -> float:

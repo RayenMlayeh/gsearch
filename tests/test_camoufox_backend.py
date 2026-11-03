@@ -263,6 +263,16 @@ async def test_consent_dialog_is_rejected_unless_google_places_the_exit_elsewher
         await fetcher.aclose()
 
 
+def test_warm_up_pages_follow_the_exit_country_and_language() -> None:
+    paris = Place(ip="203.0.113.8", country="FR", timezone="Europe/Paris", locale="fr-FR")
+    urls = camoufox_backend.warmup_urls(camoufox_backend.WARMUP_PAGES, paris)
+    assert urls[0] == "https://fr.wikipedia.org/wiki/Special:Random"
+    assert urls[-1] == "https://news.google.com/home?hl=fr&gl=FR&ceid=FR:fr"
+    assert not any("{" in u for u in urls)
+    unlocated = camoufox_backend.warmup_urls(camoufox_backend.WARMUP_PAGES, None)
+    assert unlocated[2] == "https://www.google.com/?hl=en"
+
+
 @pytest.mark.skipif(os.environ.get("GSEARCH_SKIP_BROWSER") == "1", reason="GSEARCH_SKIP_BROWSER=1")
 async def test_a_new_device_warms_up_before_its_first_search(tmp_path: Path, fake_google: str) -> None:
     base_url = fake_google
